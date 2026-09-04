@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Send, Users } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import SettingsSection from '@/components/common/page/SettingsSection';
 import NotificationTelegramAccount from './NotificationTelegramAccount';
@@ -8,17 +8,25 @@ import type { NotificationPreferencesForm } from '../../hooks/useNotificationPre
 import { useTranslations } from '@/i18n/runtime';
 
 // A member's own notification preferences for the project: for each issue event, a
-// checkbox per channel (email, Telegram). Visible to every member (each edits only
-// their own). Email is sent to the account address; Telegram to the account connected
-// in the member's profile, shown below. Delivery only happens for channels a project
-// owner has configured. Save lives in the page header.
+// checkbox per channel (email, Telegram, MS Teams). Visible to every member (each
+// edits only their own). Email is sent to the account address; Telegram to the
+// account connected in the member's profile; MS Teams to the project webhook.
+// Delivery only happens for channels a project owner has configured. Save lives
+// in the page header.
 
 // Shared column template so the header labels line up with every event row.
-const COLS = 'grid grid-cols-[1fr_5rem_5rem] items-center';
+const COLS = 'grid grid-cols-[1fr_5rem_5rem_5rem] items-center';
 
 export default function NotificationPreferences({ form }: { form: NotificationPreferencesForm }) {
   const t = useTranslations('settings.notifications');
-  const { emailEvents, setEmailEvents, telegramEvents, setTelegramEvents } = form;
+  const {
+    emailEvents,
+    setEmailEvents,
+    telegramEvents,
+    setTelegramEvents,
+    msteamsEvents,
+    setMsTeamsEvents,
+  } = form;
   return (
     <div className="flex flex-col gap-10">
       <SettingsSection title={t('eventsTitle')}>
@@ -27,6 +35,7 @@ export default function NotificationPreferences({ form }: { form: NotificationPr
             <span />
             <ChannelHeader icon={<Mail className="size-3.5" />} label={t('email')} />
             <ChannelHeader icon={<Send className="size-3.5" />} label={t('telegram')} />
+            <ChannelHeader icon={<Users className="size-3.5" />} label={t('teams')} />
           </div>
           <div className="flex flex-col">
             {NOTIFICATION_EVENTS.map((event) => (
@@ -35,8 +44,10 @@ export default function NotificationPreferences({ form }: { form: NotificationPr
                 label={t(`events.${event}`)}
                 emailChecked={emailEvents[event]}
                 telegramChecked={telegramEvents[event]}
+                msteamsChecked={msteamsEvents[event]}
                 onEmail={(v) => setEmailEvents({ ...emailEvents, [event]: v })}
                 onTelegram={(v) => setTelegramEvents({ ...telegramEvents, [event]: v })}
+                onMsTeams={(v) => setMsTeamsEvents({ ...msteamsEvents, [event]: v })}
               />
             ))}
           </div>
@@ -61,14 +72,18 @@ function ChannelRow({
   label,
   emailChecked,
   telegramChecked,
+  msteamsChecked,
   onEmail,
   onTelegram,
+  onMsTeams,
 }: {
   label: string;
   emailChecked: boolean;
   telegramChecked: boolean;
+  msteamsChecked: boolean;
   onEmail: (value: boolean) => void;
   onTelegram: (value: boolean) => void;
+  onMsTeams: (value: boolean) => void;
 }) {
   return (
     <div className={`${COLS} -mx-3 rounded-md px-3 py-2.5 transition-colors hover:bg-accent`}>
@@ -85,6 +100,13 @@ function ChannelRow({
           checked={telegramChecked}
           onCheckedChange={(v) => onTelegram(v === true)}
           aria-label={`${label} — Telegram`}
+        />
+      </div>
+      <div className="flex justify-center">
+        <Checkbox
+          checked={msteamsChecked}
+          onCheckedChange={(v) => onMsTeams(v === true)}
+          aria-label={`${label} — Microsoft Teams`}
         />
       </div>
     </div>

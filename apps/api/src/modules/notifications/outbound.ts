@@ -36,8 +36,8 @@ export interface DeliveryPayload {
 
 interface OutboxRow {
   projectId: number;
-  channel: 'email' | 'telegram';
-  recipient: string;
+  channel: 'email' | 'telegram' | 'msteams';
+  recipient: string | null;
   payload: DeliveryPayload;
 }
 
@@ -133,16 +133,83 @@ function telegramPayload(
   return { text, html, url };
 }
 
-// Enqueues outbound delivery rows for the inbox notifications just created for one
-// issue event. All rows in `notifications` share the same issue and actor (both call
-// sites operate on a single issue). No-op when the project has no enabled provider or
-// no member wants any of the event types present.
+// MS Teams copy. Structured for Adaptive Card 1.4: subject is the title with
+// emoji and issue ref, text carries the action, and url provides the action button.
+function msteamsPayload(
+  type: NotificationType,
+  ref: string,
+  title: string,
+  actor: string,
+  url: string | undefined,
+  stateChange: StateChange | null,
+): DeliveryPayload {
+  const meta: Record<NotificationType, { emoji: string; action: string }> = {
+    assigned: { emoji: '📌', action: `Assigned by ${actor}` },
+    mentioned: { emoji: '💬', action: `Mentioned by ${actor}` },
+    commented: { emoji: '💬', action: `New comment by ${actor}` },
+    state_changed: {
+      emoji: '🔄',
+      action: stateChange
+        ? `Status changed from ${stateChange.from} to ${stateChange.to} by ${actor}`
+        : `Status changed by ${actor}`,
+    },
+  };
+  const { emoji, action } = meta[type];
+  const subject = `${emoji} ${ref}: ${title}`;
+  return { subject, text: action, url };
+}
+
+export interface OutboundEvent {
+  type: NotificationType;
+  sourceActivityId?: number | null;
+  candidateUserIds: (string | null | undefined)[];
+}
+
+export interface EnqueueOutboundInput {
+  projectId: number;
+  issueId: number;
+  actorUserId: string | null;
+  actorName?: string | null;
+  notifications?: NewNotificationRow[];
+  events?: OutboundEvent[];
+}
+
+async function resolveActorName(id: string): Promise<string> {
+  const [row] = await db.select({ name: user.name }).from(user).where(eq(user.id, id));
+  return row?.name ?? 'Someone';
+}
+
+// Enqueues outbound delivery rows for issue events. Email and Telegram deliver to
+// individual recipients per their inbox rows; MS Teams delivers to the project's
+// channel webhook when enabled and any participant (actor, watcher, assignee, or
+// mention) has subscribed to that event type.
 export async function enqueueOutbound(
-  notifications: NewNotificationRow[],
-  actorName: string | null,
+  input: EnqueueOutboundInput | NewNotificationRow[],
+  legacyActorName?: string | null,
 ): Promise<void> {
-  if (notifications.length === 0) return;
-  const projectId = notifications[0].projectId;
+  let projectId: number;
+  let issueId: number;
+  let actorUserId: string | null;
+  let actorName: string | null;
+  let notifications: NewNotificationRow[];
+  let events: OutboundEvent[];
+
+  if (Array.isArray(input)) {
+    if (input.length === 0) return;
+    projectId = input[0].projectId;
+    issueId = input[0].issueId;
+    actorUserId = input[0].actorUserId;
+    actorName = legacyActorName ?? null;
+    notifications = input;
+    events = [];
+  } else {
+    projectId = input.projectId;
+    issueId = input.issueId;
+    actorUserId = input.actorUserId;
+    actorName = input.actorName ?? null;
+    notifications = input.notifications ?? [];
+    events = input.events ?? [];
+  }
 
   const settings = await readRedactedSettings(projectId);
 
@@ -161,9 +228,9 @@ export async function enqueueOutbound(
   // set no token, the instance bot.
   const telegramEnabled =
     settings.telegram.enabled && (settings.telegram.hasBotToken || (await hasUsableInstanceBot()));
-  if (!emailEnabled && !telegramEnabled) return;
+  const msteamsEnabled = settings.msteams.enabled && settings.msteams.hasWebhookUrl;
+  if (!emailEnabled && !telegramEnabled && !msteamsEnabled) return;
 
-  const issueId = notifications[0].issueId;
   const [issueRow] = await db
     .select({ seq: issue.sequenceNumber, title: issue.title })
     .from(issue)
@@ -176,21 +243,40 @@ export async function enqueueOutbound(
 
   const ref = issueRef(projectRow.key, issueRow.seq);
   const url = issueUrl(projectRow.key, issueRow.seq);
-  const actor = actorName ?? 'Someone';
-  // One issue event, so every 'state_changed' row points at the same activity row.
+  const actor = actorName ?? (actorUserId ? await resolveActorName(actorUserId) : 'Someone');
+
   const statusActivityId =
-    notifications.find((n) => n.type === 'state_changed')?.sourceActivityId ?? null;
+    notifications.find((n) => n.type === 'state_changed')?.sourceActivityId ??
+    events.find((e) => e.type === 'state_changed')?.sourceActivityId ??
+    null;
   const stateChange = statusActivityId != null ? await readStateChange(statusActivityId) : null;
 
-  const userIds = [...new Set(notifications.map((n) => n.userId))];
+  const candidateIds = new Set<string>();
+  for (const n of notifications) {
+    candidateIds.add(n.userId);
+  }
+  for (const e of events) {
+    for (const id of e.candidateUserIds) {
+      if (id) candidateIds.add(id);
+    }
+  }
+  if (actorUserId) candidateIds.add(actorUserId);
+
+  const userIds = [...candidateIds];
   const [users, prefsByUser, chatIdByUser] = await Promise.all([
-    db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.id, userIds)),
-    getPreferencesForUsers(projectId, userIds),
-    telegramEnabled ? getTelegramChatIds(userIds) : Promise.resolve(new Map<string, string>()),
+    emailEnabled && notifications.length > 0 && userIds.length > 0
+      ? db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.id, userIds))
+      : Promise.resolve([]),
+    userIds.length > 0 ? getPreferencesForUsers(projectId, userIds) : Promise.resolve(new Map()),
+    telegramEnabled && notifications.length > 0 && userIds.length > 0
+      ? getTelegramChatIds(userIds)
+      : Promise.resolve(new Map<string, string>()),
   ]);
   const emailById = new Map(users.map((u) => [u.id, u.email]));
 
   const out: OutboxRow[] = [];
+  const msteamsTypesToDeliver = new Set<NotificationType>();
+
   for (const n of notifications) {
     const prefs = prefsByUser.get(n.userId);
     if (!prefs) continue; // member has not opted in
@@ -218,6 +304,31 @@ export async function enqueueOutbound(
           payload: telegramPayload(n.type, ref, issueRow.title, actor, url, stateChange),
         });
       }
+    }
+    if (msteamsEnabled && prefs.msteamsEvents[n.type]) {
+      msteamsTypesToDeliver.add(n.type);
+    }
+  }
+
+  if (msteamsEnabled) {
+    for (const ev of events) {
+      const shouldDeliver = ev.candidateUserIds.some((id) => {
+        if (!id) return false;
+        const prefs = prefsByUser.get(id);
+        return prefs?.msteamsEvents[ev.type] === true;
+      });
+      if (shouldDeliver) {
+        msteamsTypesToDeliver.add(ev.type);
+      }
+    }
+
+    for (const type of msteamsTypesToDeliver) {
+      out.push({
+        projectId,
+        channel: 'msteams',
+        recipient: null,
+        payload: msteamsPayload(type, ref, issueRow.title, actor, url, stateChange),
+      });
     }
   }
 

@@ -16,14 +16,15 @@ import SettingsNotifications, {
 import { useNotificationSettingsQuery } from './services/settings.service';
 import { useEmailForm } from './hooks/useEmailForm';
 import { useTelegramForm } from './hooks/useTelegramForm';
+import { useMsTeamsForm } from './hooks/useMsTeamsForm';
 
 const section = settingsSection('notifications');
 
 // The Notification providers settings page
-// (/project/:projectKey/settings/notifications). Admin-only (danger_zone): the email
-// and Telegram credentials the project delivers through. Members set their own
-// delivery preferences on the main-nav Notifications page. Save lives in the page
-// header and acts on the active tab.
+// (/project/:projectKey/settings/notifications). Admin-only (danger_zone): the email,
+// Telegram, and MS Teams credentials the project delivers through. Members set
+// their own delivery preferences on the main-nav Notifications page. Save lives in
+// the page header and acts on the active tab.
 export default function SettingsNotificationsPage() {
   const { project } = useShell();
   if (!project) return null;
@@ -74,7 +75,8 @@ function NotificationsLoaded({
   const [tab, setTab] = useState<NotificationTab>('email');
   const emailForm = useEmailForm(projectKey, settings, editable);
   const telegramForm = useTelegramForm(projectKey, settings, editable);
-  const active = tab === 'email' ? emailForm : telegramForm;
+  const msteamsForm = useMsTeamsForm(projectKey, settings, editable);
+  const active = tab === 'email' ? emailForm : tab === 'telegram' ? telegramForm : msteamsForm;
 
   return (
     <Chrome
@@ -95,6 +97,7 @@ function NotificationsLoaded({
         onTabChange={setTab}
         emailForm={emailForm}
         telegramForm={telegramForm}
+        msteamsForm={msteamsForm}
       />
     </Chrome>
   );

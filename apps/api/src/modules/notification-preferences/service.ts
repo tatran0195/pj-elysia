@@ -12,6 +12,7 @@ export type EventToggles = Record<EventKey, boolean>;
 export interface NotificationPreferenceDto {
   emailEvents: EventToggles;
   telegramEvents: EventToggles;
+  msteamsEvents: EventToggles;
 }
 
 function emptyEvents(): EventToggles {
@@ -19,7 +20,11 @@ function emptyEvents(): EventToggles {
 }
 
 function defaults(): NotificationPreferenceDto {
-  return { emailEvents: emptyEvents(), telegramEvents: emptyEvents() };
+  return {
+    emailEvents: emptyEvents(),
+    telegramEvents: emptyEvents(),
+    msteamsEvents: emptyEvents(),
+  };
 }
 
 // Normalizes the stored jsonb (possibly partial or empty {}) into a full EventToggles.
@@ -33,10 +38,15 @@ function toToggles(value: unknown): EventToggles {
   };
 }
 
-function toDto(row: { emailEvents: unknown; telegramEvents: unknown }): NotificationPreferenceDto {
+function toDto(row: {
+  emailEvents: unknown;
+  telegramEvents: unknown;
+  msteamsEvents?: unknown;
+}): NotificationPreferenceDto {
   return {
     emailEvents: toToggles(row.emailEvents),
     telegramEvents: toToggles(row.telegramEvents),
+    msteamsEvents: toToggles(row.msteamsEvents),
   };
 }
 
@@ -50,6 +60,7 @@ export async function getPreferences(
     .select({
       emailEvents: userNotificationPreference.emailEvents,
       telegramEvents: userNotificationPreference.telegramEvents,
+      msteamsEvents: userNotificationPreference.msteamsEvents,
     })
     .from(userNotificationPreference)
     .where(
@@ -67,7 +78,11 @@ export async function setPreferences(
   projectId: number,
   input: NotificationPreferenceDto,
 ): Promise<NotificationPreferenceDto> {
-  const values = { emailEvents: input.emailEvents, telegramEvents: input.telegramEvents };
+  const values = {
+    emailEvents: input.emailEvents,
+    telegramEvents: input.telegramEvents,
+    msteamsEvents: input.msteamsEvents,
+  };
   await db
     .insert(userNotificationPreference)
     .values({ userId, projectId, ...values })
@@ -91,6 +106,7 @@ export async function getPreferencesForUsers(
       userId: userNotificationPreference.userId,
       emailEvents: userNotificationPreference.emailEvents,
       telegramEvents: userNotificationPreference.telegramEvents,
+      msteamsEvents: userNotificationPreference.msteamsEvents,
     })
     .from(userNotificationPreference)
     .where(

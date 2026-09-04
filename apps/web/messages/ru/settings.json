@@ -339,6 +339,7 @@
     "description": "Выберите, о каких событиях задач вы получаете уведомления и куда.",
     "email": "Почта",
     "telegram": "Telegram",
+    "teams": "Teams",
     "events": {
       "assigned": "Назначен на задачу",
       "mentioned": "Упомянут в задаче",
@@ -372,6 +373,10 @@
     "noTelegramAccount": "Аккаунт Telegram не подключён",
     "emailSaved": "Почтовый провайдер сохранён",
     "telegramSaved": "Провайдер Telegram сохранён",
+    "msteams": "Microsoft Teams",
+    "msteamsHint": "Доставка уведомлений в канал Microsoft Teams через входящий вебхук. URL вебхука хранится в зашифрованном виде.",
+    "msteamsWebhookUrl": "URL входящего вебхука",
+    "msteamsSaved": "Настройки Microsoft Teams сохранены",
     "preferencesSaved": "Настройки уведомлений сохранены"
   },
   "transfer": {

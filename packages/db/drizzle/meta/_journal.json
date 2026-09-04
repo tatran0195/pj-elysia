@@ -813,6 +813,20 @@
       "when": 1788323527877,
       "tag": "0115_slimy_maddog",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1788522469864,
+      "tag": "0116_great_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1788523230278,
+      "tag": "0117_lonely_lilandra",
+      "breakpoints": true
     }
   ]
 }

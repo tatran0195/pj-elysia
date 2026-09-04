@@ -339,6 +339,7 @@
     "description": "Choose which issue events you get and where.",
     "email": "Email",
     "telegram": "Telegram",
+    "teams": "Teams",
     "events": {
       "assigned": "Assigned to an issue",
       "mentioned": "Mentioned on an issue",
@@ -372,6 +373,10 @@
     "noTelegramAccount": "No Telegram account connected",
     "emailSaved": "Email provider saved",
     "telegramSaved": "Telegram provider saved",
+    "msteams": "Microsoft Teams",
+    "msteamsHint": "Deliver notifications to a Microsoft Teams channel via Incoming Webhook. The webhook URL is stored encrypted.",
+    "msteamsWebhookUrl": "Incoming Webhook URL",
+    "msteamsSaved": "Microsoft Teams settings saved",
     "preferencesSaved": "Notification preferences saved"
   },
   "transfer": {

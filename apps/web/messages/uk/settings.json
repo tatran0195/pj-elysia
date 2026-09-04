@@ -339,6 +339,7 @@
     "description": "Виберіть, про які події ви дізнаєтесь і куди.",
     "email": "Пошта",
     "telegram": "Telegram",
+    "teams": "Teams",
     "events": {
       "assigned": "Призначено на задачу",
       "mentioned": "Згадали в задачі",
@@ -372,6 +373,10 @@
     "noTelegramAccount": "Акаунт Telegram не підключено",
     "emailSaved": "Поштового провайдера збережено",
     "telegramSaved": "Telegram-провайдера збережено",
+    "msteams": "Microsoft Teams",
+    "msteamsHint": "Доставка сповіщень у канал Microsoft Teams через вхідний вебхук. URL вебхука зберігається зашифрованим.",
+    "msteamsWebhookUrl": "URL вхідного вебхука",
+    "msteamsSaved": "Налаштування Microsoft Teams збережено",
     "preferencesSaved": "Налаштування сповіщень збережено"
   },
   "transfer": {

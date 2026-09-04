@@ -339,6 +339,7 @@
     "description": "اختار أحداث المهام اللي توصلك، وتوصلك فين.",
     "email": "البريد الإلكتروني",
     "telegram": "Telegram",
+    "teams": "Teams",
     "events": {
       "assigned": "الإسناد إلى مهمة",
       "mentioned": "الإشارة في مهمة",
@@ -372,6 +373,10 @@
     "noTelegramAccount": "لا يوجد حساب Telegram مرتبط",
     "emailSaved": "حُفظ مزوّد البريد الإلكتروني",
     "telegramSaved": "حُفظ مزوّد Telegram",
+    "msteams": "Microsoft Teams",
+    "msteamsHint": "توصيل الإشعارات لقناة Microsoft Teams عبر الويب هوك الوارد. رابط الويب هوك بيتخزّن مشفّر.",
+    "msteamsWebhookUrl": "رابط الويب هوك الوارد",
+    "msteamsSaved": "حُفظت إعدادات Microsoft Teams",
     "preferencesSaved": "حُفظت تفضيلات الإشعارات"
   },
   "transfer": {

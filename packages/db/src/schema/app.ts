@@ -778,6 +778,7 @@ export const userNotificationPreference = pgTable(
       .references(() => project.id, { onDelete: 'cascade' }),
     emailEvents: jsonb('email_events').notNull().default({}),
     telegramEvents: jsonb('telegram_events').notNull().default({}),
+    msteamsEvents: jsonb('msteams_events').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -822,9 +823,10 @@ export const userTelegramAccount = pgTable(
 // apps/api/src/modules/notifications/outbound.ts) and drained by the worker
 // following the same claim/retry pattern as webhook_delivery. The message text is
 // composed at enqueue time and stored in `payload`; the channel credentials are read
-// from project_notification_setting at send time. channel is 'email' | 'telegram'
-// ('email' picks SMTP or Resend from the project config). recipient is the member's
-// email address for email rows, or their Telegram chat id for telegram rows.
+// from project_notification_setting at send time. channel is 'email' | 'telegram' |
+// 'msteams' ('email' picks SMTP or Resend from the project config). recipient is the
+// member's email address for email rows, their Telegram chat id for telegram rows,
+// or null for msteams channel rows.
 export const notificationDelivery = pgTable(
   'notification_delivery',
   {
@@ -843,7 +845,10 @@ export const notificationDelivery = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    check('notification_delivery_channel_check', sql`${t.channel} IN ('email', 'telegram')`),
+    check(
+      'notification_delivery_channel_check',
+      sql`${t.channel} IN ('email', 'telegram', 'msteams')`,
+    ),
     // Backs the worker's claim query: due pending rows ordered by next_attempt_at.
     index('notification_delivery_due_idx')
       .on(t.nextAttemptAt)

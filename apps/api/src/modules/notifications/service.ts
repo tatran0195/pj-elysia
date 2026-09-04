@@ -13,7 +13,7 @@ import { and, desc, eq, inArray, lt, or, sql, isNull } from 'drizzle-orm';
 import { addedMentionHandles, resolveMentionHandles, type MentionedUsers } from '#shared/mentions';
 import { autoWatchIssue, watcherUserIds } from '#modules/issues/watchers';
 import { iso } from '#shared/lib';
-import { enqueueOutbound } from './outbound';
+import { enqueueOutbound, type OutboundEvent } from './outbound';
 
 // Inbox notifications. A notification is one (recipient, event) row: a user is told
 // about an issue they are involved in. What happens on the issue ('commented',
@@ -53,19 +53,6 @@ async function actorName(id: string | null): Promise<string | null> {
   return rows[0]?.name ?? null;
 }
 
-async function insertNotifications(rows: NewNotificationRow[]): Promise<void> {
-  if (rows.length === 0) return;
-  const name = await actorName(rows[0].actorUserId);
-  await db.insert(notification).values(rows.map((r) => ({ ...r, actorName: name })));
-  // Fan out to the project's enabled delivery channels (email, Telegram). Best-effort:
-  // a delivery failure must not break the inbox insert or the domain mutation.
-  try {
-    await enqueueOutbound(rows, name);
-  } catch (err) {
-    console.error('[notifications] outbound enqueue failed:', err);
-  }
-}
-
 // Fan out a new comment. Mentioned members get a 'mentioned' notification; the
 // watchers get 'commented'. A mentioned user gets only the 'mentioned' one. The
 // comment author is never notified. Commenting and being mentioned both subscribe
@@ -103,7 +90,39 @@ export async function notifyComment(
       actorUserId: actor,
     });
   }
-  await insertNotifications(rows);
+
+  const name = await actorName(actor);
+  if (rows.length > 0) {
+    await db.insert(notification).values(rows.map((r) => ({ ...r, actorName: name })));
+  }
+
+  const events: OutboundEvent[] = [
+    {
+      type: 'commented' as const,
+      sourceActivityId: comment.id,
+      candidateUserIds: [...watchers, actor],
+    },
+  ];
+  if (mentioned.size > 0) {
+    events.push({
+      type: 'mentioned' as const,
+      sourceActivityId: comment.id,
+      candidateUserIds: [...mentioned, actor],
+    });
+  }
+
+  try {
+    await enqueueOutbound({
+      projectId,
+      issueId: comment.issueId,
+      actorUserId: actor,
+      actorName: name,
+      notifications: rows,
+      events,
+    });
+  } catch (err) {
+    console.error('[notifications] outbound enqueue failed:', err);
+  }
 }
 
 // Fan out the mentions an issue's description or markdown custom field gained. Only
@@ -127,18 +146,41 @@ export async function notifyTextMentions(input: {
   const { memberIds } = await resolveMentionHandles(projectId, handles);
   if (memberIds.length === 0) return;
   await autoWatchIssue(projectId, issueId, memberIds);
-  await insertNotifications(
-    memberIds
-      .filter((userId) => userId !== actor)
-      .map((userId) => ({
-        userId,
-        projectId,
-        issueId,
-        sourceActivityId: input.sourceActivityId,
-        type: 'mentioned' as const,
-        actorUserId: actor,
-      })),
-  );
+
+  const rows: NewNotificationRow[] = memberIds
+    .filter((userId) => userId !== actor)
+    .map((userId) => ({
+      userId,
+      projectId,
+      issueId,
+      sourceActivityId: input.sourceActivityId,
+      type: 'mentioned' as const,
+      actorUserId: actor,
+    }));
+
+  const name = await actorName(actor);
+  if (rows.length > 0) {
+    await db.insert(notification).values(rows.map((r) => ({ ...r, actorName: name })));
+  }
+
+  try {
+    await enqueueOutbound({
+      projectId,
+      issueId,
+      actorUserId: actor,
+      actorName: name,
+      notifications: rows,
+      events: [
+        {
+          type: 'mentioned' as const,
+          sourceActivityId: input.sourceActivityId,
+          candidateUserIds: [...memberIds, actor],
+        },
+      ],
+    });
+  } catch (err) {
+    console.error('[notifications] outbound enqueue failed:', err);
+  }
 }
 
 // Fan out issue field changes recorded by an update. A new assignee (if a member and
@@ -156,6 +198,7 @@ export async function notifyIssueChange(input: {
 }): Promise<void> {
   const { projectId, issueId, actorUserId: actor } = input;
   const rows: NewNotificationRow[] = [];
+  const events: OutboundEvent[] = [];
 
   if (input.assignedUserId) {
     await autoWatchIssue(projectId, issueId, [input.assignedUserId]);
@@ -172,6 +215,11 @@ export async function notifyIssueChange(input: {
         });
       }
     }
+    events.push({
+      type: 'assigned' as const,
+      sourceActivityId: input.assignedActivityId ?? null,
+      candidateUserIds: [input.assignedUserId, actor],
+    });
   }
 
   if (input.statusChanged) {
@@ -189,9 +237,32 @@ export async function notifyIssueChange(input: {
         actorUserId: actor,
       });
     }
+    events.push({
+      type: 'state_changed' as const,
+      sourceActivityId: input.statusActivityId ?? null,
+      candidateUserIds: [...watchers, actor],
+    });
   }
 
-  await insertNotifications(rows);
+  const name = await actorName(actor);
+  if (rows.length > 0) {
+    await db.insert(notification).values(rows.map((r) => ({ ...r, actorName: name })));
+  }
+
+  if (rows.length > 0 || events.length > 0) {
+    try {
+      await enqueueOutbound({
+        projectId,
+        issueId,
+        actorUserId: actor,
+        actorName: name,
+        notifications: rows,
+        events,
+      });
+    } catch (err) {
+      console.error('[notifications] outbound enqueue failed:', err);
+    }
+  }
 }
 
 // --- Inbox read + mutations ------------------------------------------------------

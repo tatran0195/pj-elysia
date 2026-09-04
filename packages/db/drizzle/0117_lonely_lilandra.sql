@@ -1,0 +1,1 @@
+ALTER TABLE "user_notification_preference" ADD COLUMN "msteams_events" jsonb DEFAULT '{}'::jsonb NOT NULL;

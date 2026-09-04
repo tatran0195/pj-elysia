@@ -1078,6 +1078,10 @@ export interface NotificationSettings {
   };
   resend: { enabled: boolean; hasApiKey: boolean };
   telegram: { enabled: boolean; hasBotToken: boolean };
+  msteams: {
+    enabled: boolean;
+    hasWebhookUrl: boolean;
+  };
 }
 
 // A partial write. Each section is optional so a provider card saves on its own.
@@ -1095,6 +1099,10 @@ export interface NotificationSettingsPatch {
   };
   resend?: { enabled: boolean; apiKey?: string };
   telegram?: { enabled: boolean; botToken?: string };
+  msteams?: {
+    enabled: boolean;
+    webhookUrl?: string;
+  };
 }
 
 // ── Storage limits ────────────────────────────────────────────────────────────
@@ -1397,11 +1405,11 @@ export interface PublicAuthConfig {
 }
 
 // The session member's own notification preferences for a project: which issue
-// events they want by email and/or Telegram. Email is sent to the member's account
-// address, Telegram to the account they linked in their profile.
+// events they want by email, Telegram, and/or MS Teams.
 export interface NotificationPreferences {
   emailEvents: NotificationEventToggles;
   telegramEvents: NotificationEventToggles;
+  msteamsEvents: NotificationEventToggles;
 }
 
 // The session user's Telegram link. `botUsername` is null when no instance bot is

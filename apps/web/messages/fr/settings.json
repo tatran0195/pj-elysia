@@ -339,6 +339,7 @@
     "description": "Choisissez quels événements de ticket vous recevez, et où.",
     "email": "E-mail",
     "telegram": "Telegram",
+    "teams": "Teams",
     "events": {
       "assigned": "Assigné à un ticket",
       "mentioned": "Mentionné sur un ticket",
@@ -372,6 +373,10 @@
     "noTelegramAccount": "Aucun compte Telegram connecté",
     "emailSaved": "Fournisseur d'e-mail enregistré",
     "telegramSaved": "Fournisseur Telegram enregistré",
+    "msteams": "Microsoft Teams",
+    "msteamsHint": "Délivrez des notifications dans un canal Microsoft Teams via un webhook entrant. L'URL du webhook est stockée chiffrée.",
+    "msteamsWebhookUrl": "URL du webhook entrant",
+    "msteamsSaved": "Paramètres Microsoft Teams enregistrés",
     "preferencesSaved": "Préférences de notification enregistrées"
   },
   "transfer": {

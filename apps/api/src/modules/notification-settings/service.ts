@@ -5,12 +5,13 @@ import type { SmtpConfig, ResendConfig } from '@repo/mailer';
 
 // Data access for a project's notification provider credentials: the outbound
 // channels the project can deliver through (SMTP or Resend for email, a Telegram
-// bot). One row per project, managed by an owner. The full config carries secrets,
-// so it is stored encrypted as one JSON blob; the `redacted` column holds the same
-// config with secret values dropped and replaced by `hasX` flags, for the settings
-// UI. The plaintext config is only read by the delivery sender; it is never returned
-// over HTTP. Which events reach a given member, and their Telegram chat id, are a
-// per-user choice held in notification-preferences, not here.
+// bot, MS Teams incoming webhook). One row per project, managed by an owner. The
+// full config carries secrets, so it is stored encrypted as one JSON blob; the
+// `redacted` column holds the same config with secret values dropped and replaced by
+// `hasX` flags, for the settings UI. The plaintext config is only read by the
+// delivery sender; it is never returned over HTTP. Which events reach a given
+// member, and their Telegram chat id, are a per-user choice held in
+// notification-preferences, not here.
 
 // SMTP transport encryption. 'none' is plain (STARTTLS is negotiated by the
 // sender when offered); 'ssl' is implicit TLS; 'tls' forces STARTTLS.
@@ -20,6 +21,11 @@ export type EncryptionMode = (typeof ENCRYPTION_MODES)[number];
 interface TelegramConfig {
   enabled: boolean;
   botToken: string; // secret
+}
+
+export interface MsTeamsConfig {
+  enabled: boolean;
+  webhookUrl: string; // secret
 }
 
 // The stored, decrypted config. Secret fields carry the plaintext value. Read by
@@ -32,6 +38,7 @@ export interface NotificationConfig {
   smtp: SmtpConfig;
   resend: ResendConfig;
   telegram: TelegramConfig;
+  msteams: MsTeamsConfig;
 }
 
 // Which provider sends this project's email: its own SMTP/Resend when one is
@@ -45,6 +52,11 @@ export function emailSource(config: {
   if (config.smtp.enabled) return 'smtp';
   if (config.resend.enabled) return 'resend';
   return config.system.enabled ? 'system' : 'none';
+}
+
+export interface MsTeamsSettingsDto {
+  enabled: boolean;
+  hasWebhookUrl: boolean;
 }
 
 // The config as returned to the client: every secret replaced by a boolean
@@ -62,6 +74,7 @@ export interface NotificationSettingsDto {
   };
   resend: { enabled: boolean; hasApiKey: boolean };
   telegram: { enabled: boolean; hasBotToken: boolean };
+  msteams: MsTeamsSettingsDto;
 }
 
 // A partial write. Each section, when present, replaces that section's non-secret
@@ -81,6 +94,10 @@ export interface NotificationSettingsPatch {
   };
   resend?: { enabled: boolean; apiKey?: string };
   telegram?: { enabled: boolean; botToken?: string };
+  msteams?: {
+    enabled: boolean;
+    webhookUrl?: string;
+  };
 }
 
 function defaultConfig(): NotificationConfig {
@@ -99,6 +116,10 @@ function defaultConfig(): NotificationConfig {
     },
     resend: { enabled: false, apiKey: '' },
     telegram: { enabled: false, botToken: '' },
+    msteams: {
+      enabled: false,
+      webhookUrl: '',
+    },
   };
 }
 
@@ -118,6 +139,10 @@ function toDto(config: NotificationConfig): NotificationSettingsDto {
     telegram: {
       enabled: config.telegram.enabled,
       hasBotToken: config.telegram.botToken.length > 0,
+    },
+    msteams: {
+      enabled: config.msteams.enabled,
+      hasWebhookUrl: config.msteams.webhookUrl.length > 0,
     },
   };
 }
@@ -139,6 +164,7 @@ function applyPatch(
     smtp: { ...current.smtp },
     resend: { ...current.resend },
     telegram: { ...current.telegram },
+    msteams: { ...current.msteams },
   };
 
   if (patch.system) next.system = { enabled: patch.system.enabled };
@@ -165,6 +191,12 @@ function applyPatch(
       botToken: mergeSecret(current.telegram.botToken, patch.telegram.botToken),
     };
   }
+  if (patch.msteams) {
+    next.msteams = {
+      enabled: patch.msteams.enabled,
+      webhookUrl: mergeSecret(current.msteams.webhookUrl, patch.msteams.webhookUrl),
+    };
+  }
 
   return next;
 }
@@ -182,7 +214,16 @@ async function readConfig(projectId: number): Promise<NotificationConfig | null>
   const row = rows[0];
   if (!row) return null;
   // Merge over the default so a config written before a field was added stays valid.
-  return { ...defaultConfig(), ...(JSON.parse(decryptSecret(row)) as NotificationConfig) };
+  const parsed = JSON.parse(decryptSecret(row)) as Partial<NotificationConfig>;
+  const def = defaultConfig();
+  return {
+    ...def,
+    ...parsed,
+    msteams: {
+      ...def.msteams,
+      ...(parsed.msteams ?? {}),
+    },
+  };
 }
 
 // The redacted settings for a project. Defaults (no secrets, no provider of its own,
@@ -235,7 +276,16 @@ export async function readRedactedSettings(projectId: number): Promise<Notificat
   const redacted = rows[0]?.redacted as NotificationSettingsDto | undefined;
   // Merge over the default, as readConfig does, so a row written before a field was
   // added stays valid.
-  return { ...toDto(defaultConfig()), ...(redacted ?? {}) };
+  const def = toDto(defaultConfig());
+  const r = redacted ?? ({} as Partial<NotificationSettingsDto>);
+  return {
+    ...def,
+    ...r,
+    msteams: {
+      ...def.msteams,
+      ...(r.msteams ?? {}),
+    },
+  };
 }
 
 // The full decrypted config, for the sender that actually delivers a notification.

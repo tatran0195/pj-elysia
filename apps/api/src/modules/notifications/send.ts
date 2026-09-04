@@ -17,7 +17,7 @@ import { getInstanceBotConfig, isInstanceBotUsable } from '#modules/telegram/ser
 export type { SendResult };
 
 export interface SendInput {
-  channel: 'email' | 'telegram';
+  channel: 'email' | 'telegram' | 'msteams';
   recipient: string | null;
   payload: DeliveryPayload;
   config: NotificationConfig;
@@ -99,8 +99,75 @@ async function sendTelegram(input: SendInput): Promise<SendResult> {
   }
 }
 
+async function sendMsTeams(input: SendInput): Promise<SendResult> {
+  const { msteams } = input.config;
+  if (!msteams?.enabled || !msteams.webhookUrl) {
+    return { ok: false, retryable: false, error: 'msteams not configured' };
+  }
+
+  const card = {
+    type: 'message',
+    attachments: [
+      {
+        contentType: 'application/vnd.microsoft.card.adaptive',
+        contentUrl: null,
+        content: {
+          $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+          type: 'AdaptiveCard',
+          version: '1.4',
+          body: [
+            {
+              type: 'TextBlock',
+              size: 'Medium',
+              weight: 'Bolder',
+              text: input.payload.subject ?? input.payload.text,
+            },
+            {
+              type: 'TextBlock',
+              text: input.payload.text,
+              wrap: true,
+            },
+          ],
+          actions: input.payload.url
+            ? [
+                {
+                  type: 'Action.OpenUrl',
+                  title: 'View Issue',
+                  url: input.payload.url,
+                },
+              ]
+            : [],
+        },
+      },
+    ],
+  };
+
+  try {
+    const res = await fetch(msteams.webhookUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify(card),
+    });
+    if (res.ok) return { ok: true };
+    const body = await res.text().catch(() => '');
+    return {
+      ok: false,
+      retryable: res.status === 429 || res.status >= 500,
+      error: `MS Teams HTTP ${res.status}: ${body.slice(0, 200)}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      retryable: true,
+      error: err instanceof Error ? err.message : 'msteams request failed',
+    };
+  }
+}
+
 export async function sendDelivery(input: SendInput): Promise<SendResult> {
   if (input.channel === 'email') return sendNotificationEmail(input);
   if (input.channel === 'telegram') return sendTelegram(input);
+  if (input.channel === 'msteams') return sendMsTeams(input);
   return { ok: false, retryable: false, error: `unknown channel: ${input.channel as string}` };
 }

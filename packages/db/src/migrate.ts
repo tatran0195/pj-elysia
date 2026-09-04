@@ -12,7 +12,9 @@ if (!connectionString) {
 const migrationClient = postgres(connectionString, { max: 1 });
 const db = drizzle(migrationClient);
 
-const migrationsFolder = new URL('../drizzle', import.meta.url).pathname;
+import { fileURLToPath } from 'node:url';
+
+const migrationsFolder = fileURLToPath(new URL('../drizzle', import.meta.url));
 
 // Compose orders the api behind a healthy postgres, but a platform without that
 // guarantee (Railway, plain `docker run`) starts both at once and the first
