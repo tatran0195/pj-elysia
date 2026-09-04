@@ -42,7 +42,7 @@ RUN cd apps/web && bun run build
 
 # 4) Minimal final image. Node, not Bun: the server is a plain Node/Express
 # process, and Alpine keeps the musl build of any traced native module valid.
-FROM node:24-alpine AS release
+FROM node:26-alpine AS release
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
