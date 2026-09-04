@@ -1,0 +1,90 @@
+import Link from '@/components/common/Link';
+import { useRouter } from '@/lib/navigation';
+import { Minus } from 'lucide-react';
+import { useTranslations } from '@/i18n/runtime';
+import type { Initiative, Assignee } from '@/lib/api';
+import { initiativePath } from '@/utils/paths';
+import { formatShortDate } from '@/utils/dates';
+import { AssigneeAvatar } from '@/features/issue/components/shared/IssueBadges';
+import { PriorityIcon } from '@/features/issue/components/shared/IssueIcons';
+import { usePriorityLabel } from '@/hooks/usePriorityLabel';
+import { colorDot } from '@/components/common/fields/colorDot';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { STATUS_META } from '@/utils/initiativeMeta';
+import HealthBadge from '../shared/HealthBadge';
+import ProgressBar from '@/components/common/ProgressBar';
+
+// The whole row navigates to the detail page; the title is also a real anchor so
+// middle/cmd-click opens it in a new tab.
+export default function InitiativeRow({
+  initiative,
+  projectKey,
+  owner,
+}: {
+  initiative: Initiative;
+  projectKey: string;
+  owner: Assignee | null;
+}) {
+  const t = useTranslations('initiatives');
+  const priorityLabel = usePriorityLabel();
+  const router = useRouter();
+  const href = initiativePath(projectKey, initiative.id);
+
+  return (
+    <TableRow className="group/item cursor-pointer" onClick={() => router.push(href)}>
+      <TableCell className="px-3 py-2.5 align-middle whitespace-normal">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="shrink-0">{colorDot(STATUS_META[initiative.status].color)}</span>
+          <div className="min-w-0">
+            <Link
+              href={href}
+              onClick={(e) => e.stopPropagation()}
+              className="block truncate text-sm font-medium hover:underline"
+            >
+              {initiative.title}
+            </Link>
+            {initiative.description && (
+              <span className="block truncate text-xs text-muted-foreground">
+                {initiative.description}
+              </span>
+            )}
+          </div>
+        </div>
+      </TableCell>
+
+      <TableCell className="px-3 py-2.5 align-middle">
+        {initiative.priority ? (
+          <span className="flex items-center gap-1.5 text-sm">
+            <PriorityIcon priority={initiative.priority} className="size-3.5" />
+            <span className="text-muted-foreground">{priorityLabel(initiative.priority)}</span>
+          </span>
+        ) : (
+          <Minus className="size-3.5 text-muted-foreground" />
+        )}
+      </TableCell>
+
+      <TableCell className="px-3 py-2.5 align-middle">
+        {owner ? (
+          <span className="flex items-center gap-1.5 text-sm">
+            <AssigneeAvatar name={owner.name} image={owner.image} />
+            <span className="truncate text-muted-foreground">{owner.name}</span>
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">{t('noOwner')}</span>
+        )}
+      </TableCell>
+
+      <TableCell className="px-3 py-2.5 align-middle text-xs text-muted-foreground">
+        {initiative.targetDate ? formatShortDate(initiative.targetDate) : '—'}
+      </TableCell>
+
+      <TableCell className="px-3 py-2.5 align-middle">
+        <ProgressBar progress={initiative.progress} />
+      </TableCell>
+
+      <TableCell className="px-3 py-2.5 align-middle">
+        <HealthBadge health={initiative.health} />
+      </TableCell>
+    </TableRow>
+  );
+}

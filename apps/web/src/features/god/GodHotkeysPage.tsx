@@ -1,0 +1,54 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useTranslations } from '@/i18n/runtime';
+import type { HotkeyOverrides } from '@/lib/api';
+import { DEFAULT_COMBOS } from '@/utils/hotkeys';
+import HotkeysEditor from '@/components/common/hotkeys/HotkeysEditor';
+import ListSkeleton from '@/components/common/skeleton/ListSkeleton';
+import { Button } from '@/components/ui/button';
+import GodSectionPage from './components/GodSectionPage';
+import {
+  useInstanceHotkeySettingsQuery,
+  useUpdateInstanceHotkeySettings,
+} from '@/services/hotkeys.service';
+
+// The instance keyboard shortcuts. What is stored is the set of commands rebound
+// away from their built-in key; a row reset to the default drops out of the map.
+export default function GodHotkeysPage() {
+  const t = useTranslations('god.hotkeys');
+  const tCommon = useTranslations('common');
+  const query = useInstanceHotkeySettingsQuery();
+  const update = useUpdateInstanceHotkeySettings();
+  const [draft, setDraft] = useState<HotkeyOverrides | null>(null);
+
+  const stored = query.data;
+  const overrides = draft ?? stored ?? {};
+  const dirty = stored != null && JSON.stringify(overrides) !== JSON.stringify(stored);
+
+  async function save() {
+    try {
+      await update.mutateAsync(overrides);
+      setDraft(null);
+      toast.success(t('saved'));
+    } catch {
+      // The failure already surfaced through the global mutation error toast.
+    }
+  }
+
+  return (
+    <GodSectionPage
+      slug="hotkeys"
+      actions={
+        <Button size="sm" disabled={!dirty || update.isPending} onClick={() => void save()}>
+          {update.isPending ? tCommon('saving') : tCommon('save')}
+        </Button>
+      }
+    >
+      {stored == null ? (
+        <ListSkeleton rows={8} rowClassName="h-9" />
+      ) : (
+        <HotkeysEditor base={DEFAULT_COMBOS} overrides={overrides} onChange={setDraft} />
+      )}
+    </GodSectionPage>
+  );
+}

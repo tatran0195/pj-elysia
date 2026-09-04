@@ -1,0 +1,719 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+/* The upstream Inter build, not the Fontsource one: Google Fonts strips the
+   character variants, and cv05/cv08/zero are what make l, I, 1 and 0 tell
+   apart at the 12–14px this UI is mostly set in. It also carries the opsz
+   axis, so small text gets the wider-spaced optical master. */
+@import 'inter-ui/inter-variable.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'InterVariable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-kanban-column: var(--kanban-column);
+  --color-kanban-column-raised: var(--kanban-column-raised);
+  --color-kanban-column-wip-destructive: var(--kanban-column-wip-destructive);
+  --color-kanban-column-wip-warning: var(--kanban-column-wip-warning);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Tailwind's default line-heights are tuned for prose at 16px; the app runs on
+     text-xs/text-sm, where they leave multi-line text cramped. Body sizes get 1.5+,
+     headings tighten as they grow. */
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.5;
+  --text-base--line-height: 1.6;
+  --text-lg--line-height: 1.55;
+  --text-xl--line-height: 1.4;
+  --text-2xl--line-height: 1.25;
+  --text-2xl--letter-spacing: -0.01em;
+  --text-3xl--line-height: 1.15;
+  --text-3xl--letter-spacing: -0.02em;
+  --text-4xl--line-height: 1.1;
+  --text-4xl--letter-spacing: -0.025em;
+}
+
+/* Grayscale ramps with no hue, and the page never sits on pure white or pure black.
+   Text pairs are measured with APCA, not eyeballed: see DESIGN.md for the thresholds. */
+:root {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.18 0 0);
+  --card: oklch(0.998 0 0);
+  --card-foreground: oklch(0.18 0 0);
+  --popover: oklch(0.998 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  --primary: oklch(0.22 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.22 0 0);
+  --muted: oklch(0.965 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.955 0 0);
+  --accent-foreground: oklch(0.22 0 0);
+  --destructive: oklch(0.505 0.21 27);
+  --warning: oklch(0.56 0.13 75);
+  --border: oklch(0.905 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.62 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.972 0 0);
+  --sidebar-foreground: oklch(0.18 0 0);
+  --sidebar-primary: oklch(0.22 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0.22 0 0);
+  --sidebar-border: oklch(0.905 0 0);
+  --sidebar-ring: oklch(0.62 0 0);
+  --priority-low: #6b7280;
+  --priority-medium: #eab308;
+  --priority-high: #f97316;
+  --priority-urgent: #f2683c;
+  --kanban-column: oklch(0.945 0 0);
+  --kanban-column-raised: oklch(0.958 0 0);
+  --kanban-column-wip-destructive: oklch(0.923 0.011 27);
+  --kanban-column-wip-warning: oklch(0.926 0.007 75);
+  --kanban-card: oklch(0.972 0 0);
+  --kanban-card-hover: oklch(0.995 0 0);
+  --kanban-card-blocked: oklch(0.969 0.008 25);
+  --kanban-card-blocked-hover: oklch(0.99 0.013 25);
+  --row-blocked: oklch(0.982 0.008 25);
+  --row-blocked-hover: oklch(0.968 0.013 25);
+  --kanban-card-selected: oklch(0.925 0.04 265);
+  --overlay-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.18), 0 4px 10px -4px rgb(0 0 0 / 0.1);
+  --pinned-column-shadow: 0 0 18px 2px rgb(0 0 0 / 0.16);
+  /* A panel on a side edge casts to the side, so the glow has no offset. */
+  --side-panel-shadow: 0 0 28px 6px rgb(0 0 0 / 0.16);
+  --modal-shadow: 0 32px 64px -16px rgb(0 0 0 / 0.28), 0 12px 24px -12px rgb(0 0 0 / 0.16);
+  /* The chat tab row casts down on the transcript under it; the composer is a
+     rounded surface the transcript scrolls up to, so it casts all round. */
+  --chat-tabs-shadow: 0 10px 16px -6px rgb(0 0 0 / 0.28);
+  --chat-composer-shadow: 0 -2px 20px 2px rgb(0 0 0 / 0.22);
+}
+
+.dark {
+  --background: oklch(0.185 0 0);
+  --foreground: oklch(0.965 0 0);
+  --card: oklch(0.225 0 0);
+  --card-foreground: oklch(0.965 0 0);
+  --popover: oklch(0.24 0 0);
+  --popover-foreground: oklch(0.965 0 0);
+  --primary: oklch(0.93 0 0);
+  --primary-foreground: oklch(0.18 0 0);
+  --secondary: oklch(0.29 0 0);
+  --secondary-foreground: oklch(0.965 0 0);
+  --muted: oklch(0.29 0 0);
+  --muted-foreground: oklch(0.85 0 0);
+  --accent: oklch(0.3 0 0);
+  --accent-foreground: oklch(0.965 0 0);
+  --destructive: oklch(0.77 0.18 22);
+  --warning: oklch(0.82 0.14 80);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.62 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.965 0 0);
+  --sidebar-primary: oklch(0.93 0 0);
+  --sidebar-primary-foreground: oklch(0.18 0 0);
+  --sidebar-accent: oklch(0.24 0 0);
+  --sidebar-accent-foreground: oklch(0.965 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.62 0 0);
+  --priority-low: #9ca3af;
+  --priority-medium: #eab308;
+  --priority-high: #f97316;
+  --priority-urgent: #f2683c;
+  --kanban-column: oklch(0.16 0 0);
+  --kanban-column-raised: oklch(0.19 0 0);
+  --kanban-column-wip-destructive: oklch(0.191 0.009 22);
+  --kanban-column-wip-warning: oklch(0.193 0.007 80);
+  --kanban-card: oklch(0.215 0 0);
+  --kanban-card-hover: oklch(0.25 0 0);
+  --kanban-card-blocked: oklch(0.222 0.012 25);
+  --kanban-card-blocked-hover: oklch(0.256 0.016 25);
+  --row-blocked: oklch(0.193 0.012 25);
+  --row-blocked-hover: oklch(0.23 0.016 25);
+  --kanban-card-selected: oklch(0.31 0.07 266);
+  --overlay-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.7), 0 6px 16px -6px rgb(0 0 0 / 0.55);
+  --pinned-column-shadow: 0 0 20px 4px rgb(0 0 0 / 0.6);
+  --side-panel-shadow: 0 0 28px 8px rgb(0 0 0 / 0.65);
+  --modal-shadow: 0 40px 80px -20px rgb(0 0 0 / 0.85), 0 16px 32px -16px rgb(0 0 0 / 0.7);
+  --chat-tabs-shadow: 0 12px 18px -6px rgb(0 0 0 / 0.75);
+  --chat-composer-shadow: 0 -2px 22px 4px rgb(0 0 0 / 0.7);
+}
+
+/* Every floating surface lifts off the page with the same shadow. It is set here
+   rather than per component: the shadcn components are kept as generated, and
+   `shadow-md` on a popover reads as nothing against a background of nearly the
+   same lightness. These rules sit outside @layer, so they win over the utility. */
+[data-slot='dropdown-menu-content'],
+[data-slot='dropdown-menu-sub-content'],
+[data-slot='context-menu-content'],
+[data-slot='context-menu-sub-content'],
+[data-slot='select-content'],
+[data-slot='popover-content'],
+[data-slot='combobox-content'],
+[data-slot='tooltip-content'] {
+  box-shadow: var(--overlay-shadow);
+}
+
+/* Dialogs and sheets cover a far larger area, so they carry a wider, deeper cast
+   than a menu. */
+[data-slot='dialog-content'],
+[data-slot='sheet-content'] {
+  box-shadow: var(--modal-shadow);
+}
+
+/* The composer's own box casts the shadow, not the row around it. Set here because
+   the input group is a generated component carrying a `shadow-xs` of its own, which
+   tailwind-merge does not drop for a `shadow-[var(…)]` utility — it reads that as a
+   shadow colour. */
+.chat-composer [data-slot='input-group'] {
+  box-shadow: var(--chat-composer-shadow);
+}
+
+/* The class the generated message scroller puts on its viewport, with no rule of
+   its own. A message the composer cuts at the bottom edge fades out there instead
+   of ending mid-glyph; the transcript's own bottom padding is deeper than the fade,
+   so the last message is whole once it is scrolled to. */
+.scroll-fade-b {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+}
+
+/* Kanban card surface — it sits on --kanban-column, so it is lighter than the
+   column in both themes, and it changes its own background on hover instead of
+   highlighting the border. */
+.kanban-card {
+  background-color: var(--kanban-card);
+  transition: background-color 0.12s ease;
+}
+.kanban-card:hover {
+  background-color: var(--kanban-card-hover);
+}
+/* Held up by another issue: a red-tinted card surface, faint enough to read as a
+   shade of the card rather than an error. */
+.kanban-card-blocked {
+  background-color: var(--kanban-card-blocked);
+}
+.kanban-card-blocked:hover {
+  background-color: var(--kanban-card-blocked-hover);
+}
+
+/* The same reading for a table row, over the page background instead of a card. */
+.row-blocked {
+  background-color: var(--row-blocked);
+}
+.row-blocked:hover {
+  background-color: var(--row-blocked-hover);
+}
+/* Selected in the board multi-select: a blue-tinted card surface (Linear-style),
+   overriding the base and hover fills. */
+.kanban-card-selected,
+.kanban-card-selected:hover {
+  background-color: var(--kanban-card-selected);
+}
+
+/* Uniform thin scrollbar across the app. Native scrollbars are styled directly
+   rather than through a scroll-area component, so every scroll region — board
+   views, panels, menus — looks the same, and the virtualized views keep the
+   native overflow container that the react-virtual virtualizer, sticky headers
+   and dnd auto-scroll depend on. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+    font-feature-settings:
+      'cv05' 1,
+      'cv08' 1,
+      'zero' 1;
+  }
+}
+
+/* MarkdownEditor (Tiptap) content — no toolbar of its own, so the typography
+   has to read as plain text with light formatting, not a boxed widget. */
+.md-content {
+  font-size: var(--text-sm);
+  line-height: 1.857; /* 26px on the 4px grid */
+}
+/* Table cells hold short lines, where the body leading reads as too loose. */
+.md-content.text-xs {
+  line-height: 1.667;
+}
+.md-content > * + * {
+  margin-top: 1em;
+}
+/* A heading belongs to the text under it: more space above than below. */
+.md-content > * + :is(h1, h2, h3) {
+  margin-top: 1.75em;
+}
+.md-content > :is(h1, h2, h3) + * {
+  margin-top: 0.4em;
+}
+.md-content li + li {
+  margin-top: 0.25em;
+}
+/* Each written block reads in the script it was typed in, so a paragraph of Arabic
+   and one of English can sit in the same description. The direction is set per
+   block rather than on the editor: `auto` on the root reads only the first
+   paragraph, and an empty editor gives it nothing to read, which would resolve to
+   left-to-right and take the placeholder with it. An empty block is left out for
+   that reason — it follows the page instead. */
+.md-content > :is(p, h1, h2, h3, li, blockquote):not(.is-editor-empty) {
+  unicode-bidi: plaintext;
+}
+.md-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: inline-start;
+  height: 0;
+  pointer-events: none;
+}
+.md-content h1,
+.md-content h2,
+.md-content h3 {
+  font-weight: 600;
+  line-height: 1.25;
+}
+.md-content h1 {
+  font-size: 1.25em;
+}
+.md-content h2 {
+  font-size: 1.125em;
+}
+.md-content h3 {
+  font-size: 1em;
+}
+.md-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Mention chips: an @username in the text is rendered as its own node (see
+   lib/tiptap-mention.ts) and styled as a pill. */
+.md-content .mention {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  border-radius: 0.375em;
+  padding: 0.05em 0.35em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.md-content code {
+  background: var(--muted);
+  border-radius: 0.25em;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+/* Source code reads left to right whatever the interface language is, so a code
+   block keeps its direction inside a mirrored page. */
+.md-content pre {
+  background: var(--muted);
+  border-radius: var(--radius-md);
+  padding: 0.6em 0.8em;
+  overflow-x: auto;
+  direction: ltr;
+  text-align: start;
+}
+.md-content pre code {
+  background: none;
+  padding: 0;
+}
+/* Token colors for the hljs-* classes lowlight emits, taken from highlight.js's
+   GitHub light and dark themes. Their background and base text color are dropped:
+   the block already gets them from .md-content pre above. */
+.md-content {
+  --hljs-keyword: #d73a49;
+  --hljs-title: #6f42c1;
+  --hljs-attr: #005cc5;
+  --hljs-string: #032f62;
+  --hljs-built-in: #e36209;
+  --hljs-comment: #6a737d;
+  --hljs-name: #22863a;
+  --hljs-section: #005cc5;
+  --hljs-bullet: #735c0f;
+  --hljs-addition: #22863a;
+  --hljs-addition-bg: #f0fff4;
+  --hljs-deletion: #b31d28;
+  --hljs-deletion-bg: #ffeef0;
+}
+.dark .md-content {
+  --hljs-keyword: #ff7b72;
+  --hljs-title: #d2a8ff;
+  --hljs-attr: #79c0ff;
+  --hljs-string: #a5d6ff;
+  --hljs-built-in: #ffa657;
+  --hljs-comment: #8b949e;
+  --hljs-name: #7ee787;
+  --hljs-section: #1f6feb;
+  --hljs-bullet: #f2cc60;
+  --hljs-addition: #aff5b4;
+  --hljs-addition-bg: #033a16;
+  --hljs-deletion: #ffdcd7;
+  --hljs-deletion-bg: #67060c;
+}
+.md-content .hljs-doctag,
+.md-content .hljs-keyword,
+.md-content .hljs-meta .hljs-keyword,
+.md-content .hljs-template-tag,
+.md-content .hljs-template-variable,
+.md-content .hljs-type,
+.md-content .hljs-variable.language_ {
+  color: var(--hljs-keyword);
+}
+.md-content .hljs-title {
+  color: var(--hljs-title);
+}
+.md-content .hljs-attr,
+.md-content .hljs-attribute,
+.md-content .hljs-literal,
+.md-content .hljs-meta,
+.md-content .hljs-number,
+.md-content .hljs-operator,
+.md-content .hljs-selector-attr,
+.md-content .hljs-selector-class,
+.md-content .hljs-selector-id,
+.md-content .hljs-variable {
+  color: var(--hljs-attr);
+}
+.md-content .hljs-meta .hljs-string,
+.md-content .hljs-regexp,
+.md-content .hljs-string {
+  color: var(--hljs-string);
+}
+.md-content .hljs-built_in,
+.md-content .hljs-symbol {
+  color: var(--hljs-built-in);
+}
+.md-content .hljs-code,
+.md-content .hljs-comment,
+.md-content .hljs-formula {
+  color: var(--hljs-comment);
+}
+.md-content .hljs-name,
+.md-content .hljs-quote,
+.md-content .hljs-selector-pseudo,
+.md-content .hljs-selector-tag {
+  color: var(--hljs-name);
+}
+.md-content .hljs-section {
+  color: var(--hljs-section);
+  font-weight: 700;
+}
+.md-content .hljs-bullet {
+  color: var(--hljs-bullet);
+}
+.md-content .hljs-emphasis {
+  font-style: italic;
+}
+.md-content .hljs-strong {
+  font-weight: 700;
+}
+.md-content .hljs-addition {
+  color: var(--hljs-addition);
+  background-color: var(--hljs-addition-bg);
+}
+.md-content .hljs-deletion {
+  color: var(--hljs-deletion);
+  background-color: var(--hljs-deletion-bg);
+}
+.md-content blockquote {
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 0.75em;
+  color: var(--muted-foreground);
+}
+.md-content ul,
+.md-content ol {
+  padding-inline-start: 1.25em;
+}
+.md-content ul {
+  list-style: disc;
+}
+.md-content ol {
+  list-style: decimal;
+}
+/* Task lists render a checkbox per item, not a bullet — drop the list marker and
+   lay each item out as [checkbox] [text]. */
+.md-content ul[data-type='taskList'] {
+  list-style: none;
+  padding-inline-start: 0;
+}
+.md-content ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.md-content ul[data-type='taskList'] li > label {
+  margin-top: 0.2em;
+}
+.md-content ul[data-type='taskList'] input[type='checkbox'] {
+  cursor: pointer;
+}
+.md-content table {
+  border-collapse: collapse;
+}
+/* A table keeps its column widths and scrolls on its own instead of squeezing the
+   columns into the width it is given. Rendered markdown puts the table straight into
+   the content; the editor wraps it in a div of its own. */
+.md-content > table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.md-content .tableWrapper {
+  overflow-x: auto;
+}
+/* A cell being typed into is empty for a moment; a column collapsed to nothing has
+   no place to click. */
+.md-content .tableWrapper :is(th, td) {
+  min-width: 4em;
+}
+.md-content .selectedCell {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+}
+.md-content :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+  text-align: start;
+}
+.md-content th {
+  background: var(--muted);
+  font-weight: 600;
+}
+/* Right-to-left corrections for the shadcn primitives, applied from the outside for
+   the same reason as the shadows above: the generated components are kept as shadcn
+   writes them, so an edit inside one is lost the next time it is re-added.
+
+   These rules also have to sit outside @layer. Tailwind v4 orders its layers
+   `theme, base, components, utilities`, so a rule in `@layer components` loses to
+   the utility classes on the element however specific it is. */
+[dir='rtl'] [data-slot='dialog-close'],
+[dir='rtl'] [data-slot='sheet-close'] {
+  right: auto;
+  inset-inline-end: calc(var(--spacing) * 4);
+}
+/* `translate-x` has no logical form, so the checked position is mirrored
+   explicitly: the thumb travels towards the end of the track either way. */
+[dir='rtl'] [data-slot='switch-thumb'][data-state='checked'] {
+  --tw-translate-x: calc(-1 * (100% - 2px));
+  translate: var(--tw-translate-x) var(--tw-translate-y);
+}
+/* The inset variant butts the main panel against the sidebar, so it drops the margin
+   on the sidebar's side and puts it back once the sidebar collapses. Upstream does
+   that with `ml-0` / `collapsed:ml-2`; mirrored, the side to drop is the right one.
+   Stated physically because the upstream declaration is physical too, and a logical
+   property here would resolve to the same side and fight it. */
+@media (width >= 48rem) {
+  [dir='rtl'] [data-slot='sidebar-inset']:is(:where(.peer)[data-variant='inset'] ~ *) {
+    margin-left: calc(var(--spacing) * 2);
+    margin-right: 0;
+  }
+  [dir='rtl']
+    [data-slot='sidebar-inset']:is(:where(.peer)[data-variant='inset'] ~ *):is(
+      :where(.peer)[data-state='collapsed'] ~ *
+    ) {
+    margin-right: calc(var(--spacing) * 2);
+  }
+}
+/* The trigger icon shows a panel against the edge the sidebar sits on. */
+[dir='rtl'] [data-slot='sidebar-trigger'] svg {
+  rotate: 180deg;
+}
+
+/* xyflow sets `direction: ltr` on its own root, which it needs for the coordinate
+   math behind panning and zooming, and every note inherited it. A note's content is
+   prose, so it takes the page direction back; the canvas keeps its own, since a note
+   is placed by stored coordinates and moved with a transform.
+
+   Selected through the attribute rather than `inherit`: xyflow's stylesheet is
+   imported from the canvas component, so it lands after this file and wins on
+   source order against a single class. */
+[dir='rtl'] .sticker-note {
+  direction: rtl;
+}
+/* Sticky notes always sit on a light pastel background, so their placeholder and
+   checkboxes are keyed to dark regardless of the app theme. */
+.sticker-note .md-content p.is-editor-empty:first-child::before {
+  color: rgba(0, 0, 0, 0.4);
+}
+.sticker-note .md-content ul[data-type='taskList'] input[type='checkbox'] {
+  accent-color: #000;
+}
+/* React Flow's default edge stroke is too dark on the canvas in both themes. */
+.react-flow__edge-path,
+.react-flow__connection-path {
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+}
+.md-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+/* react-grid-layout: base positioning plus theming to match the app (no card
+   box; a subtle placeholder and a quiet corner resize handle). */
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
+}
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+.react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+.react-grid-item.resizing {
+  transition: none;
+  z-index: 1;
+  will-change: width, height;
+}
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 3;
+  will-change: transform;
+}
+.react-grid-item.dropping {
+  visibility: hidden;
+}
+.react-grid-item.react-grid-placeholder {
+  background: var(--accent);
+  opacity: 0.6;
+  border-radius: var(--radius-md);
+  transition-duration: 100ms;
+  z-index: 2;
+  user-select: none;
+}
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
+}
+/* When resizing is disabled (view mode), react-grid-layout tags the item with
+   this class; hide the handle so nothing edit-related shows outside edit mode. */
+.react-grid-item.react-resizable-hide > .react-resizable-handle {
+  display: none;
+}
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--muted-foreground);
+  border-bottom: 2px solid var(--muted-foreground);
+  border-bottom-right-radius: 2px;
+}
+
+/* Shimmer text utility (shadcn `shimmer`): a highlight sweeps across the text,
+   used on the agent-chat status marker while the agent is working. */
+@utility shimmer {
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(
+    90deg,
+    var(--color-muted-foreground) 0%,
+    var(--color-muted-foreground) 40%,
+    var(--color-foreground) 50%,
+    var(--color-muted-foreground) 60%,
+    var(--color-muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  animation: tw-shimmer 1.5s linear infinite;
+}
+
+@keyframes tw-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@repo/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "APP_ENCRYPTION_KEY=${APP_ENCRYPTION_KEY:-test} bun test"
+  },
+  "dependencies": {
+    "@repo/crypto": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/mailer": "workspace:*",
+    "@simplewebauthn/server": "^14.0.0",
+    "drizzle-orm": "^0.45.2",
+    "openid-client": "^6.8.7"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/bun": "latest",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^9.39.0",
+    "typescript": "^6.0.3"
+  }
+}

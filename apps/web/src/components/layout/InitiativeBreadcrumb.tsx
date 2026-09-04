@@ -1,0 +1,30 @@
+import Link from '@/components/common/Link';
+import { ChevronRight } from 'lucide-react';
+import { useTranslations } from '@/i18n/runtime';
+import { initiativesPath } from '@/utils/paths';
+import InitiativeBreadcrumbName from '@/components/layout/InitiativeBreadcrumbName';
+
+// The header title on an initiative page: Initiatives › initiative name.
+export default function InitiativeBreadcrumb({
+  projectKey,
+  initiativeId,
+}: {
+  projectKey: string | null;
+  initiativeId: number;
+}) {
+  const t = useTranslations('nav');
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <Link
+        href={projectKey ? initiativesPath(projectKey) : '/'}
+        className="truncate text-muted-foreground hover:text-foreground"
+      >
+        {t('initiatives')}
+      </Link>
+      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+      {projectKey && (
+        <InitiativeBreadcrumbName initiativeId={initiativeId} projectKey={projectKey} />
+      )}
+    </span>
+  );
+}

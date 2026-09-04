@@ -1,0 +1,76 @@
+{
+  "title": "Cycles",
+  "newCycle": "New cycle",
+  "status": {
+    "upcoming": "Upcoming",
+    "active": "Active",
+    "completed": "Completed"
+  },
+  "views": {
+    "table": "Table",
+    "timeline": "Timeline"
+  },
+  "columns": {
+    "name": "Name",
+    "dates": "Dates",
+    "length": "Length",
+    "issues": "Issues",
+    "progress": "Progress"
+  },
+  "emptyTitle": "No cycles yet",
+  "emptyDescription": "A cycle is a time-boxed period the team plans its issues into.",
+  "nothingPlannedTitle": "Nothing planned",
+  "nothingPlannedDescription": "The timeline shows active and upcoming cycles. Finished ones are in the table.",
+  "options": "Cycle options",
+  "transferIssues": "{count, plural, one {Move # unfinished issue} other {Move # unfinished issues}}",
+  "finishedEarly": "Finished early, planned to end {date}",
+  "form": {
+    "editTitle": "Edit cycle",
+    "newTitle": "New cycle",
+    "name": "Name",
+    "goal": "Goal",
+    "goalPlaceholder": "What should this cycle deliver?",
+    "length": "Length",
+    "starts": "Starts",
+    "ends": "Ends",
+    "create": "Create cycle",
+    "saveFailed": "Could not save the cycle"
+  },
+  "weeks": "{count, plural, one {# week} other {# weeks}}",
+  "transfer": {
+    "title": "Move unfinished issues",
+    "description": "Unfinished issues move to the cycle you pick. Finished and canceled ones stay here.",
+    "moveTo": "Move to",
+    "noCycle": "No cycle",
+    "submit": "Move issues",
+    "moving": "Moving…",
+    "moved": "{count, plural, one {# issue moved} other {# issues moved}}",
+    "failed": "Could not move the issues"
+  },
+  "finish": {
+    "action": "Finish cycle",
+    "title": "Finish cycle early",
+    "description": "{cycle} closes today instead of {date}. You can't reopen it. {count, plural, =0 {Nothing is left unfinished.} one {# unfinished issue stays on it.} other {# unfinished issues stay on it.}}",
+    "submit": "Finish cycle"
+  },
+  "startNext": {
+    "action": "Start next cycle today",
+    "title": "Start the next cycle today",
+    "description": "{cycle} closes today and you can't reopen it. {next} starts today and still ends on {date}. {count, plural, =0 {Nothing carries over.} one {# unfinished issue moves to it.} other {# unfinished issues move to it.}} Finished and canceled issues stay on {cycle}.",
+    "submit": "Start next cycle",
+    "started": "{cycle} started. {count, plural, =0 {No issues carried over.} one {# issue carried over.} other {# issues carried over.}}"
+  },
+  "delete": {
+    "title": "Delete cycle",
+    "description": "{cycle} is deleted for good. {count, plural, =0 {It holds no issues.} one {# issue stays in the project, without a cycle.} other {# issues stay in the project, without a cycle.}}"
+  },
+  "details": "Cycle details",
+  "goal": "Goal",
+  "noGoal": "No goal set.",
+  "progress": "Progress",
+  "openCycle": "Open cycle",
+  "dragFailed": "Could not move the cycle",
+  "notFound": "Cycle not found.",
+  "defaultName": "Sprint {n}",
+  "issuesDone": "Issues done"
+}

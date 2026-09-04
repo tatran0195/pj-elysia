@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to a pull request cancels the run still in flight for it.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: 1.4.0
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Format, lint, typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # Cache the global bun install cache, keyed by the lockfile.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+  build:
+    name: Build apps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # Cache the global bun install cache, keyed by the lockfile.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Integration tests need a live database, so they run in the compose gate:
+      # a throwaway Postgres and MinIO, with the api built from the production
+      # Dockerfile. Building both api-test and worker-test also verifies their
+      # Dockerfiles build.
+      - name: Build test images
+        run: docker compose -f docker-compose.test.yml build
+
+      # `run` starts api-test's dependencies (Postgres healthy, the MinIO bucket
+      # init completed), runs the suite, and exits with its code. It does not use
+      # --abort-on-container-exit, which would tear the stack down the moment the
+      # one-shot minio-test-init exits, before api-test starts.
+      - name: Run the compose test gate
+        run: docker compose -f docker-compose.test.yml run --rm api-test
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
