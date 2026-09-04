@@ -119,4 +119,65 @@ describe('IssueMarkdownEditor extensions', () => {
     assert.equal(md.trim(), 'Hello @alice');
     editor.destroy();
   });
+
+  it('renders user display name in mention chip and preserves @username in markdown', () => {
+    const editor = new Editor({
+      extensions: [
+        StarterKit.configure(issueEditorStarterKitOptions),
+        Mention.configure({
+          items: () => [
+            {
+              userId: 'u1',
+              name: 'Alice Smith',
+              username: 'alice',
+              kind: 'member',
+              image: null,
+            },
+          ],
+        }),
+        Markdown.configure({ html: true }),
+      ],
+      content: '<p>Hey <span data-mention="alice">@alice</span></p>',
+    });
+
+    const html = editor.getHTML();
+    assert.ok(html.includes('@Alice Smith'));
+    assert.ok(html.includes('title="@alice"'));
+
+    const md = editor.storage.markdown.getMarkdown();
+    assert.equal(md.trim(), 'Hey @alice');
+    editor.destroy();
+  });
+
+  it('triggers onSubmit on Cmd/Ctrl+Enter and onCancel on Escape', () => {
+    let submitted = false;
+    let cancelled = false;
+
+    const editor = new Editor({
+      extensions: [StarterKit.configure(issueEditorStarterKitOptions)],
+      editorProps: {
+        handleKeyDown(_view, event) {
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            submitted = true;
+            return true;
+          }
+          if (event.key === 'Escape') {
+            cancelled = true;
+            return true;
+          }
+          return false;
+        },
+      },
+    });
+
+    const enterEvent = new dom.window.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true });
+    editor.view.someProp('handleKeyDown', (f) => f(editor.view, enterEvent));
+    assert.equal(submitted, true);
+
+    const escEvent = new dom.window.KeyboardEvent('keydown', { key: 'Escape' });
+    editor.view.someProp('handleKeyDown', (f) => f(editor.view, escEvent));
+    assert.equal(cancelled, true);
+
+    editor.destroy();
+  });
 });

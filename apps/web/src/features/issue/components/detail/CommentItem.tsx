@@ -1,5 +1,5 @@
 import { Reply } from 'lucide-react';
-import { type FeedItem } from '@/lib/api';
+import { type Assignee, type FeedItem } from '@/lib/api';
 import Avatar from '@/components/common/Avatar';
 import { Button } from '@/components/ui/button';
 import { useRelativeTime } from '@/context/relativeTimeContext';
@@ -15,12 +15,14 @@ export default function CommentItem({
   item,
   image,
   onReply,
+  assignees,
 }: {
   item: FeedItem;
   image: string | null;
   // Left out where replying is not offered: the shared read-only feed and the
   // timeline popover.
   onReply?: () => void;
+  assignees?: Assignee[];
 }) {
   const t = useTranslations('issue.comments');
   const relativeTime = useRelativeTime();
@@ -51,6 +53,7 @@ export default function CommentItem({
         className="mt-1 ps-7 text-sm text-foreground/85"
         defaultValue={item.body ?? ''}
         editable={false}
+        assignees={assignees}
       />
     </div>
   );

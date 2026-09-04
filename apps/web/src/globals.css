@@ -373,6 +373,10 @@
   padding: 0.05em 0.35em;
   font-weight: 500;
   white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+.md-content .mention:hover {
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
 }
 .md-content code {
   background: var(--muted);

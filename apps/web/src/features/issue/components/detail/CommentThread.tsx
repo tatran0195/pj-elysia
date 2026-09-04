@@ -58,6 +58,7 @@ export default function CommentThread({
             item={row.item}
             image={(row.item.actorUserId && imageByUserId.get(row.item.actorUserId)) ?? null}
             onReply={composer ? () => setReplyTo(row) : undefined}
+            assignees={composer?.assignees}
           />
         </div>
       ))}

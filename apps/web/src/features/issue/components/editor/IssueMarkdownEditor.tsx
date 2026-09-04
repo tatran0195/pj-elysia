@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import { useEditor, EditorContent, type Editor, type FocusPosition } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { TableKit } from '@tiptap/extension-table';
@@ -7,6 +7,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import { common, createLowlight } from 'lowlight';
 import { Markdown } from 'tiptap-markdown';
+import { type Assignee } from '@/lib/api';
 import { ResizableImage } from '../../utils/tiptap-image';
 import { Mention } from '@/lib/tiptap-mention';
 import { SlashCommand } from '@/lib/tiptap-slash-command';
@@ -41,8 +42,12 @@ export default function IssueMarkdownEditor({
   placeholder,
   className,
   editable = true,
+  autofocus,
   uploadFile,
   imageAttachments,
+  assignees,
+  onSubmit,
+  onCancel,
 }: {
   defaultValue: string;
   onChange?: (markdown: string) => void;
@@ -55,21 +60,29 @@ export default function IssueMarkdownEditor({
   // When false the content is read-only (no bubble menu, no editing) — used to
   // render comment bodies as markdown.
   editable?: boolean;
+  autofocus?: FocusPosition | boolean;
   // When set, files dropped onto the editor are uploaded and inserted at the
   // drop position (image/video inline, other files as a link).
   uploadFile?: (file: File) => Promise<Embeddable>;
   // Offered in a picker, to embed an upload again. Omitted where there is no
   // issue to read them from yet (the create modal), which drops the picker.
   imageAttachments?: Embeddable[];
+  assignees?: Assignee[];
+  onSubmit?: () => void;
+  onCancel?: () => void;
 }) {
   const t = useTranslations('issue.editor');
   const tCommon = useTranslations('common.editor');
   const editorRef = useRef<Editor | null>(null);
   // Held in a ref because the extensions are built once: the "@" menu reads the
   // roster through it, so a list that arrives later is still offered.
-  const mentionCandidates = useMentionCandidates();
+  const mentionCandidates = useMentionCandidates(assignees);
   const mentionCandidatesRef = useRef(mentionCandidates);
   mentionCandidatesRef.current = mentionCandidates;
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
 
   // Upload each file and insert it (image/video inline, other files as a link)
@@ -88,6 +101,7 @@ export default function IssueMarkdownEditor({
 
   const editor = useEditor({
     editable,
+    autofocus,
     extensions: [
       // Replaces StarterKit's plain code block, keeping the node name codeBlock.
       StarterKit.configure(issueEditorStarterKitOptions),
@@ -129,6 +143,21 @@ export default function IssueMarkdownEditor({
       },
       handleClick(view, _pos, event) {
         return openLinkOnModifierClick(event, view.dom);
+      },
+      handleKeyDown(_view, event) {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          if (onSubmitRef.current) {
+            event.preventDefault();
+            onSubmitRef.current();
+            return true;
+          }
+        }
+        if (event.key === 'Escape' && onCancelRef.current) {
+          event.preventDefault();
+          onCancelRef.current();
+          return true;
+        }
+        return false;
       },
       // Files dropped from the OS are uploaded, then inserted at the drop
       // position. Internal moves and attachment-card drags (which carry
@@ -172,7 +201,7 @@ export default function IssueMarkdownEditor({
       {editable && <EditorTableMenu editor={editor} />}
       {/* Grows with the text rather than being pinned to the container's height,
           so a container that scrolls measures the overflow and shows a bar. */}
-      <EditorContent editor={editor} className="flex min-h-full flex-col" />
+      <EditorContent editor={editor} className="flex min-h-full flex-1 flex-col" />
       {imageAttachments && (
         <EditorImagePicker
           open={imagePickerOpen}

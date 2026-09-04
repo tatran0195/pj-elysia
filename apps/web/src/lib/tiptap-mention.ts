@@ -89,6 +89,11 @@ export const Mention = Node.create<MentionOptions>({
         parseHTML: (element) => element.getAttribute('data-mention') ?? '',
         renderHTML: (attributes) => ({ 'data-mention': attributes.username }),
       },
+      name: {
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-name') ?? '',
+        renderHTML: (attributes) => (attributes.name ? { 'data-name': attributes.name } : {}),
+      },
     };
   },
 
@@ -98,20 +103,28 @@ export const Mention = Node.create<MentionOptions>({
 
   renderHTML({ node, HTMLAttributes }) {
     const username = String(node.attrs.username);
-    // The name behind the handle is only known while the roster is loaded, so it is
-    // a tooltip rather than part of the chip.
-    const name = this.options
+    const candidate = this.options
       .items()
-      .find((c) => c.username.toLowerCase() === username.toLowerCase())?.name;
+      .find((c) => c.username.toLowerCase() === username.toLowerCase());
+    const name = candidate?.name || (node.attrs.name as string) || '';
+    const label = name ? `@${name}` : `@${username}`;
     return [
       'span',
-      mergeAttributes(HTMLAttributes, { class: 'mention', ...(name ? { title: name } : {}) }),
-      `@${username}`,
+      mergeAttributes(HTMLAttributes, {
+        class: 'mention',
+        title: `@${username}`,
+      }),
+      label,
     ];
   },
 
   renderText({ node }) {
-    return `@${node.attrs.username}`;
+    const username = String(node.attrs.username);
+    const candidate = this.options
+      .items()
+      .find((c) => c.username.toLowerCase() === username.toLowerCase());
+    const name = candidate?.name || (node.attrs.name as string) || '';
+    return name ? `@${name}` : `@${username}`;
   },
 
   addStorage() {
@@ -155,7 +168,7 @@ export const Mention = Node.create<MentionOptions>({
             .chain()
             .focus()
             .insertContentAt(range, [
-              { type: 'mention', attrs: { username: props.username } },
+              { type: 'mention', attrs: { username: props.username, name: props.name } },
               { type: 'text', text: ' ' },
             ])
             .run();
