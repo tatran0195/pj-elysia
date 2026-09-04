@@ -4,6 +4,8 @@ import { Editor } from '@tiptap/core';
 import Link from '@tiptap/extension-link';
 import StarterKit from '@tiptap/starter-kit';
 import { JSDOM } from 'jsdom';
+import { Markdown } from 'tiptap-markdown';
+import { Mention } from '@/lib/tiptap-mention';
 import { issueEditorStarterKitOptions } from './IssueMarkdownEditor';
 import { openLinkOnModifierClick } from '../../utils/modifierClickLink';
 
@@ -12,7 +14,7 @@ let originalGlobalDescriptors: Map<string, PropertyDescriptor | undefined>;
 
 beforeEach(() => {
   originalGlobalDescriptors = new Map(
-    ['window', 'document', 'navigator'].map((name) => [
+    ['window', 'document', 'navigator', 'NodeFilter', 'Node'].map((name) => [
       name,
       Object.getOwnPropertyDescriptor(globalThis, name),
     ]),
@@ -22,6 +24,8 @@ beforeEach(() => {
     window: { configurable: true, value: dom.window },
     document: { configurable: true, value: dom.window.document },
     navigator: { configurable: true, value: dom.window.navigator },
+    NodeFilter: { configurable: true, value: dom.window.NodeFilter },
+    Node: { configurable: true, value: dom.window.Node },
   });
 });
 
@@ -99,5 +103,20 @@ describe('IssueMarkdownEditor extensions', () => {
 
     assert.equal(openLinkOnModifierClick(event, root), false);
     assert.equal(event.defaultPrevented, false);
+  });
+
+  it('registers Mention extension and serializes @mention to markdown', () => {
+    const editor = new Editor({
+      extensions: [
+        StarterKit.configure(issueEditorStarterKitOptions),
+        Mention.configure({ items: () => [] }),
+        Markdown.configure({ html: true }),
+      ],
+      content: '<p>Hello <span data-mention="alice">@alice</span></p>',
+    });
+
+    const md = editor.storage.markdown.getMarkdown();
+    assert.equal(md.trim(), 'Hello @alice');
+    editor.destroy();
   });
 });

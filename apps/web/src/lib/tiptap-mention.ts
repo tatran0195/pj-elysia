@@ -11,7 +11,9 @@ export interface MentionCandidate {
   userId: string;
   name: string;
   username: string;
+  image: string | null;
   kind: 'member' | 'agent';
+  agentKind?: 'external' | 'internal' | null;
 }
 
 export type MentionOptions = {
@@ -53,7 +55,8 @@ function mentionFragment(text: string): DocumentFragment | null {
 // editor reads it back as a node. Code and links are left as written: an @ in them
 // is part of the code or the URL.
 function markMentions(root: HTMLElement): void {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const showText = globalThis.NodeFilter?.SHOW_TEXT ?? 4;
+  const walker = document.createTreeWalker(root, showText);
   const texts: Text[] = [];
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node as Text;
@@ -133,8 +136,11 @@ export const Mention = Node.create<MentionOptions>({
         editor: this.editor,
         char: '@',
         // Radix makes everything outside an open overlay inert, so the list mounts
-        // inside the dialog the editor sits in.
+        // inside the dialog the editor sits in when present.
         container: '[data-slot="dialog-content"]',
+        floatingUi: {
+          strategy: 'fixed',
+        },
         items: ({ query }) => {
           const needle = query.toLowerCase();
           return items()
@@ -163,7 +169,7 @@ export const Mention = Node.create<MentionOptions>({
               component = new ReactRenderer(EditorMentionMenu, {
                 props,
                 editor: props.editor,
-                className: 'z-50',
+                className: 'z-[100]',
               });
               unmount = props.mount(component.element);
             },

@@ -44,7 +44,7 @@ export default function CommentThread({
   collect(root, 0);
 
   return (
-    <li className="overflow-hidden rounded-lg border border-black/4 bg-muted/40 shadow-xs dark:border-white/8 dark:bg-background/60">
+    <li className="rounded-lg border border-black/4 bg-muted/40 shadow-xs dark:border-white/8 dark:bg-background/60">
       {rows.map((row, index) => (
         <div
           key={row.item.id}
