@@ -84,7 +84,7 @@ export default function AddWidgetDialog({ onAdd }: { onAdd: (type: WidgetType) =
           )}
         </div>
 
-        <div className="max-h-[55vh] space-y-5 overflow-y-auto pr-1">
+        <div className="max-h-[55vh] space-y-5 overflow-y-auto px-1 py-0.5">
           {groups.length === 0 && (
             <p className="py-6 text-center text-sm text-muted-foreground">
               {t('noWidgetMatches', { query: query.trim() })}

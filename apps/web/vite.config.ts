@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    define: {
+      'process.env': {},
+    },
     // `@/*` resolves through the tsconfig paths, natively in Vite 8.
     resolve: { tsconfigPaths: true },
     plugins: [tailwindcss(), reactRouter(), itsaplanServer()],

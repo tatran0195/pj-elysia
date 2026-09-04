@@ -69,7 +69,7 @@ function requestUrl(req) {
   return new URL(req.url ?? '/', `${protocol}://${host}`);
 }
 
-function webRequest(req) {
+function _webRequest(req) {
   const headers = new Headers();
   for (const [name, value] of Object.entries(req.headers)) {
     if (Array.isArray(value)) value.forEach((v) => headers.append(name, v));
@@ -194,7 +194,8 @@ export function gateHandler(req, res, next) {
   // Two sign-in steps carry a cookie that does not authenticate yet: the MFA
   // code step (`?mfa=1`, set by the OAuth callback) and a magic link opened in
   // a tab that still holds an old session. Both belong on /login.
-  if (pathname === '/login' && (searchParams.has('mfa') || searchParams.has('magic'))) return next();
+  if (pathname === '/login' && (searchParams.has('mfa') || searchParams.has('magic')))
+    return next();
   const target = gateRedirect(pathname, hasSession);
   if (target) return sendRedirect(res, target);
   return next();
