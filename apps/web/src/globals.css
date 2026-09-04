@@ -695,7 +695,7 @@
   border-bottom-right-radius: 2px;
 }
 
-/* Shimmer text utility (shadcn `shimmer`): a highlight sweeps across the text,
+/* Shimmer text utility: a highlight sweeps across the text,
    used on the agent-chat status marker while the agent is working. */
 @utility shimmer {
   color: transparent;
