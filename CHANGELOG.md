@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.17.0](https://github.com/tatran0195/pj-elysia/compare/v0.16.0...v0.17.0) (2026-09-04)
+
+
+### Features
+
+* **storage:** port flydrive 2.x and migrate api from s3 to storage ([21ec2a6](https://github.com/tatran0195/pj-elysia/commit/21ec2a62034798c08f28df27d993e8a549eb70c4))
+* **web:** support unified user and agent mention dropdowns ([abcfda3](https://github.com/tatran0195/pj-elysia/commit/abcfda39940a138b28de4609e1e2f8a4c1d5af4f))
+
+
+### Improvements
+
+* **web:** use rich markdown editor in comment composer for highlighted mention chips ([48585c6](https://github.com/tatran0195/pj-elysia/commit/48585c683581d2403767932ea75884f7812cd694))
+
+
+### Bug Fixes
+
+* **api:** deliver MS Teams notifications for actor and issue watcher events ([62cb35f](https://github.com/tatran0195/pj-elysia/commit/62cb35f5df1f89180c8850906b1afb5486fb204f))
+* **web:** prevent focus outline clipping and define process.env for third-party libraries ([79b2deb](https://github.com/tatran0195/pj-elysia/commit/79b2deb2316a96c95c7b9a479a6c24cae4dbd884))
+* **web:** remove -mb-px from line variant TabsTrigger to prevent scroll-y ([bc9e84c](https://github.com/tatran0195/pj-elysia/commit/bc9e84c9c743f362710c3a7027d119503b6dd90f))
+* **web:** unify scroll container padding and margin for focus outline clearance ([c591dab](https://github.com/tatran0195/pj-elysia/commit/c591dab47d98fd31278950a80065caa625edfbc2))
+
 ## [0.16.0](https://github.com/croffasia/itsaplan/compare/v0.15.0...v0.16.0) (2026-08-31)
 
 
