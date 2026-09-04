@@ -2,8 +2,8 @@ import { db, issue, issueAttachment, issueFieldValue } from '@repo/db';
 import { eq, sql } from 'drizzle-orm';
 import { iso, num } from '#shared/lib';
 
-// Data access for issue attachments. File bytes live in the S3-compatible object
-// store (#shared/s3); these rows hold the metadata and the object key. publicId is
+// Data access for issue attachments. File bytes live in the object store
+// (#shared/storage); these rows hold the metadata and the object key. publicId is
 // the unguessable id used in the public download URL.
 
 export interface AttachmentRow {

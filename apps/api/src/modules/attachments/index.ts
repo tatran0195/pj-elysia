@@ -4,7 +4,7 @@ import { noContent } from '#shared/http';
 import { authContext } from '#shared/auth-context';
 import { entityGuard } from '#shared/guards';
 import { HttpError } from '#shared/lib';
-import { putObject, getObject, deleteObject } from '#shared/s3';
+import { storage, readStream } from '#shared/storage';
 import { assertPublicHttpUrl } from '#shared/net';
 import { mcpTool } from '#mcp/generate';
 import { accessErrors, commonErrors, errors } from '#shared/responses';
@@ -65,7 +65,7 @@ async function assertUploadAllowed(
 // logged with what it takes to find the object and reported as a bad gateway.
 async function storeObject(key: string, bytes: Buffer, contentType: string): Promise<void> {
   try {
-    await putObject(key, bytes, contentType);
+    await storage.put(key, bytes, { contentType });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(
@@ -282,7 +282,7 @@ export const attachmentRoutes = new Elysia({
 
       // The row already points at the new object, so a failed delete only
       // orphans the old bytes.
-      await deleteObject(existing.s3Key).catch((err) => {
+      await storage.delete(existing.s3Key).catch((err: unknown) => {
         console.error(
           `[planner] failed to delete object ${existing.s3Key}:`,
           err instanceof Error ? err.message : err,
@@ -308,7 +308,7 @@ export const attachmentRoutes = new Elysia({
       await removeAttachmentEmbeds(row.issueId, row.publicId);
       // Row is already gone; a failed object delete only orphans bytes, so don't
       // fail the request over it.
-      await deleteObject(row.s3Key).catch((err) => {
+      await storage.delete(row.s3Key).catch((err: unknown) => {
         console.error(
           `[planner] failed to delete object ${row.s3Key}:`,
           err instanceof Error ? err.message : err,
@@ -348,7 +348,7 @@ export const attachmentRoutes = new Elysia({
 
       let obj;
       try {
-        obj = await getObject(row.s3Key);
+        obj = await readStream(row.s3Key);
       } catch (err) {
         throw new HttpError(404, err instanceof Error ? err.message : 'Object not found');
       }

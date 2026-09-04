@@ -1,7 +1,7 @@
 import { db, agentSkill, agentSkillLink } from '@repo/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { iso, rethrowDuplicate, HttpError } from '#shared/lib';
-import { putObject, getObjectText, deleteObjects } from '#shared/s3';
+import { storage, deleteMany } from '#shared/storage';
 import { parseFrontmatter, isDisallowedRef } from './skill-format';
 
 // Data access for the project skill library. A skill's SKILL.md and reference files
@@ -86,7 +86,7 @@ export async function getSkill(id: number, projectId: number): Promise<SkillRow 
 // The full SKILL.md markdown from the object store. 404 if the skill is missing.
 export async function getSkillMarkdown(id: number, projectId: number): Promise<string> {
   const skill = await getSkillRow(id, projectId);
-  return getObjectText(skillMdKey(skill.s3Prefix));
+  return storage.get(skillMdKey(skill.s3Prefix));
 }
 
 // The content of one reference file of a skill, addressed by its relative path.
@@ -98,7 +98,7 @@ export async function getSkillRefContent(
   const skill = await getSkillRow(id, projectId);
   const ref = (skill.files as SkillRef[]).find((f) => f.path === path);
   if (!ref) throw new HttpError(404, 'Reference file not found');
-  return getObjectText(ref.s3Key);
+  return storage.get(ref.s3Key);
 }
 
 // Loads the raw row (including s3_prefix, not in the DTO) or throws 404.
@@ -169,14 +169,16 @@ export async function createSkillFromFiles(
   const files: SkillRef[] = [];
   try {
     const mdKey = skillMdKey(prefix);
-    await putObject(mdKey, Buffer.from(input.markdown, 'utf8'), 'text/markdown');
+    await storage.put(mdKey, input.markdown, { contentType: 'text/markdown' });
     written.push(mdKey);
 
     for (const ref of input.refs) {
       const rel = sanitizeRefPath(ref.path);
       if (!rel) continue;
       const s3Key = `${prefix}/${rel}`;
-      await putObject(s3Key, ref.bytes, ref.contentType || 'application/octet-stream');
+      await storage.put(s3Key, ref.bytes, {
+        contentType: ref.contentType || 'application/octet-stream',
+      });
       written.push(s3Key);
       files.push({ path: rel, s3Key, size: ref.bytes.length });
     }
@@ -195,7 +197,7 @@ export async function createSkillFromFiles(
       .returning(dtoColumns);
     return mapRow(row);
   } catch (err) {
-    if (written.length > 0) await deleteObjects(written);
+    if (written.length > 0) await deleteMany(written);
     rethrowDuplicate(err, 'A skill with this name');
     throw err;
   }
@@ -214,11 +216,7 @@ export async function updateSkill(
 ): Promise<SkillRow | null> {
   const skill = await getSkillRow(id, projectId);
   if (patch.markdown !== undefined) {
-    await putObject(
-      skillMdKey(skill.s3Prefix),
-      Buffer.from(patch.markdown, 'utf8'),
-      'text/markdown',
-    );
+    await storage.put(skillMdKey(skill.s3Prefix), patch.markdown, { contentType: 'text/markdown' });
   }
   const set: Partial<typeof agentSkill.$inferInsert> = {};
   if (patch.name !== undefined) set.name = patch.name;
@@ -253,7 +251,7 @@ export async function addReference(
   const skill = await getSkillRow(id, projectId);
   const path = `refs/${safeName}`;
   const s3Key = `${skill.s3Prefix}/${path}`;
-  await putObject(s3Key, bytes, contentType || 'application/octet-stream');
+  await storage.put(s3Key, bytes, { contentType: contentType || 'application/octet-stream' });
 
   const files = (skill.files as SkillRef[]).filter((f) => f.path !== path);
   files.push({ path, s3Key, size: bytes.length });
@@ -274,7 +272,7 @@ export async function updateReference(
   const files = skill.files as SkillRef[];
   const ref = files.find((f) => f.path === path);
   if (!ref) throw new HttpError(404, 'Reference file not found');
-  await putObject(ref.s3Key, bytes, contentType || 'application/octet-stream');
+  await storage.put(ref.s3Key, bytes, { contentType: contentType || 'application/octet-stream' });
   const next = files.map((f) => (f.path === path ? { ...f, size: bytes.length } : f));
   await db.update(agentSkill).set({ files: next }).where(eq(agentSkill.id, id));
   return getSkill(id, projectId);
@@ -288,7 +286,7 @@ export async function deleteReference(
   const skill = await getSkillRow(id, projectId);
   const ref = (skill.files as SkillRef[]).find((f) => f.path === path);
   if (!ref) throw new HttpError(404, 'Reference file not found');
-  await deleteObjects([ref.s3Key]);
+  await storage.delete(ref.s3Key);
   const files = (skill.files as SkillRef[]).filter((f) => f.path !== path);
   await db.update(agentSkill).set({ files }).where(eq(agentSkill.id, id));
   return getSkill(id, projectId);
@@ -304,7 +302,7 @@ export async function deleteSkill(id: number, projectId: number): Promise<boolea
   const skill = rows[0];
   if (!skill) return false;
   const keys = [skillMdKey(skill.s3Prefix), ...(skill.files as SkillRef[]).map((f) => f.s3Key)];
-  await deleteObjects(keys);
+  await deleteMany(keys);
   await db.delete(agentSkill).where(eq(agentSkill.id, id));
   return true;
 }

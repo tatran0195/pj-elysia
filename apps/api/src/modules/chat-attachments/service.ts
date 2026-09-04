@@ -1,11 +1,11 @@
 import { db, chatAttachment } from '@repo/db';
 import { eq, sql } from 'drizzle-orm';
 import { HttpError, iso, num } from '#shared/lib';
-import { getObject } from '#shared/s3';
+import { storage } from '#shared/storage';
 import { isTableFilename, parseImportFile } from './parse';
 
-// Data access for chat attachments. File bytes live in the S3-compatible object
-// store (#shared/s3); these rows hold the metadata and the object key. publicId is
+// Data access for chat attachments. File bytes live in the object store
+// (#shared/storage); these rows hold the metadata and the object key. publicId is
 // the unguessable id used in the public download URL and in the marker a chat
 // message carries for an attached file.
 
@@ -73,9 +73,12 @@ export async function getProjectChatAttachmentBytes(projectId: number): Promise<
 }
 
 export async function readAttachmentBytes(s3Key: string): Promise<Buffer> {
-  const obj = await getObject(s3Key).catch(() => null);
-  if (!obj) throw new HttpError(404, 'The uploaded file is gone from the object store');
-  return Buffer.from(await new Response(obj.body).arrayBuffer());
+  try {
+    const bytes = await storage.getBytes(s3Key);
+    return Buffer.from(bytes);
+  } catch {
+    throw new HttpError(404, 'The uploaded file is gone from the object store');
+  }
 }
 
 export interface ChatAttachmentContent {

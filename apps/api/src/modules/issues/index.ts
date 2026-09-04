@@ -6,7 +6,7 @@ import { authContext } from '#shared/auth-context';
 import { assertPermission, assertProjectOwner, requireUser } from '#shared/access';
 import { HttpError } from '#shared/lib';
 import { accessErrors, commonErrors, errors } from '#shared/responses';
-import { deleteObject } from '#shared/s3';
+import { deleteMany } from '#shared/storage';
 import {
   createIssue,
   searchIssues,
@@ -132,16 +132,7 @@ function disposition(
 // Removes the deleted issues' attachment objects. A failed object delete only
 // orphans bytes, so it does not fail the request.
 async function purgeObjects(attachments: { s3Key: string }[]): Promise<void> {
-  await Promise.all(
-    attachments.map((a) =>
-      deleteObject(a.s3Key).catch((err) => {
-        console.error(
-          `[planner] failed to delete object ${a.s3Key}:`,
-          err instanceof Error ? err.message : err,
-        );
-      }),
-    ),
-  );
+  await deleteMany(attachments.map((a) => a.s3Key));
 }
 
 // The cursor travels as JSON in the query string. A malformed one gives null, which

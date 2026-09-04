@@ -34,7 +34,7 @@ import {
 import { listAgentToolLinks, setAgentTools } from '#modules/agents/tools/service';
 import { listAgentSchedules, createAgentSchedule } from '#modules/agents/schedules/service';
 import { nextCronRun } from '#modules/agents/schedules/cron';
-import { getObject } from '#shared/s3';
+import { storage } from '#shared/storage';
 
 // Which parts of a source project the copy carries over. Each key mirrors a section
 // of the project settings menu. A key set false skips that entity. Some sections
@@ -241,9 +241,8 @@ function mapProjectRow(row: typeof project.$inferSelect): ProjectRow {
 // Reads a whole object from the store into a Buffer, for copying a skill's reference
 // files into the new project's own object prefix.
 async function readObjectBytes(key: string): Promise<{ bytes: Buffer; contentType: string }> {
-  const { body, contentType } = await getObject(key);
-  const bytes = Buffer.from(await new Response(body).arrayBuffer());
-  return { bytes, contentType };
+  const [bytes, meta] = await Promise.all([storage.getBytes(key), storage.getMetaData(key)]);
+  return { bytes: Buffer.from(bytes), contentType: meta.contentType || 'application/octet-stream' };
 }
 
 // Creates a new project that copies the selected parts of the source project's

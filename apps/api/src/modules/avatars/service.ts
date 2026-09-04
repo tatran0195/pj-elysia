@@ -2,7 +2,7 @@ import { db, user } from '@repo/db';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#shared/lib';
-import { putObject, getObject, deleteObject } from '#shared/s3';
+import { storage, readStream } from '#shared/storage';
 import { getStorageSettings, MB } from '#modules/settings/service';
 
 // Avatar images for the signed-in user. The bytes live in the S3-compatible
@@ -35,7 +35,7 @@ async function setUserImage(userId: string, image: string | null): Promise<void>
 async function deletePreviousAvatar(image: string | null | undefined): Promise<void> {
   const id = avatarIdFromImage(image);
   if (!id) return;
-  await deleteObject(avatarKey(id)).catch((err) => {
+  await storage.delete(avatarKey(id)).catch((err: unknown) => {
     console.error(
       `[planner] failed to delete previous avatar ${id}:`,
       err instanceof Error ? err.message : err,
@@ -64,7 +64,7 @@ export async function replaceAvatar(
   const id = randomUUID();
   const key = avatarKey(id);
   try {
-    await putObject(key, Buffer.from(await file.arrayBuffer()), contentType);
+    await storage.put(key, Buffer.from(await file.arrayBuffer()), { contentType });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[planner] avatar PUT failed (key=${key}, size=${file.size}):`, err);
@@ -89,7 +89,7 @@ export async function clearAvatar(
 
 export async function readAvatar(id: string) {
   try {
-    return await getObject(avatarKey(id));
+    return await readStream(avatarKey(id));
   } catch (err) {
     throw new HttpError(404, err instanceof Error ? err.message : 'Object not found');
   }

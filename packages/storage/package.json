@@ -1,0 +1,31 @@
+{
+  "name": "@repo/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./drivers/s3": "./src/drivers/s3.ts",
+    "./drivers/fs": "./src/drivers/fs.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1109.0",
+    "@aws-sdk/s3-request-presigner": "^3.1109.0",
+    "etag": "^1.8.1",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/bun": "latest",
+    "@types/etag": "^1.8.3",
+    "@types/mime-types": "^2.1.4",
+    "eslint": "^9.39.0",
+    "typescript": "^6.0.3"
+  }
+}

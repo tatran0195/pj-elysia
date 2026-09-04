@@ -3,7 +3,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { authContext } from '#shared/auth-context';
 import { guards, entityGuard } from '#shared/guards';
 import { HttpError } from '#shared/lib';
-import { putObject, getObject } from '#shared/s3';
+import { storage, readStream } from '#shared/storage';
 import { mcpTool } from '#mcp/generate';
 import { accessErrors, commonErrors, errors } from '#shared/responses';
 import { requireUser } from '#shared/access';
@@ -131,7 +131,7 @@ export const chatAttachmentRoutes = new Elysia({
 
       const key = chatAttachmentKey(project.id, filename);
       try {
-        await putObject(key, content, contentType);
+        await storage.put(key, content, { contentType });
       } catch (err) {
         throw new HttpError(502, `Object store error: ${err instanceof Error ? err.message : err}`);
       }
@@ -210,7 +210,7 @@ export const chatAttachmentRoutes = new Elysia({
 
       let obj;
       try {
-        obj = await getObject(row.s3Key);
+        obj = await readStream(row.s3Key);
       } catch (err) {
         throw new HttpError(404, err instanceof Error ? err.message : 'Object not found');
       }
