@@ -100,7 +100,7 @@ export default function Modal({
             its parts. */}
         <div
           className={cn(
-            'flex min-h-0 flex-col',
+            '-mx-1 flex min-h-0 flex-col px-1',
             fullscreen ? 'flex-1 overflow-hidden' : 'overflow-y-auto',
           )}
         >

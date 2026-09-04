@@ -71,7 +71,7 @@ export default function NewProjectModal({
       <div className="flex flex-col gap-4">
         {/* On a short viewport the form scrolls on its own so the submit button
             stays in place instead of sitting below the fold. */}
-        <div className="max-h-[55vh] overflow-y-auto px-1 py-0.5">
+        <div className="-mx-1 max-h-[55vh] overflow-y-auto px-1 py-0.5">
           {copyFrom ? (
             <CopyProjectForm
               name={name}
