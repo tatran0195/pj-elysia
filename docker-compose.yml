@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Self-hosting stack: postgres + minio + api + worker + bot + web.
+# Self-hosting stack: postgres + api + worker + bot + web.
 # Coolify uses docker-compose.coolify.yml; local dev uses docker-compose.dev.yml
 # (backing services only).
 #
@@ -8,7 +8,7 @@
 #
 # Required in .env (the stack refuses to start without them):
 #   POSTGRES_PASSWORD, BETTER_AUTH_SECRET, APP_ENCRYPTION_KEY, WORKER_INTERNAL_TOKEN,
-#   S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, API_URL, APP_URL
+#   API_URL, APP_URL
 # Generate each secret with: openssl rand -base64 32
 #
 # The four services run from images published on each release; update with
@@ -35,43 +35,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # S3-compatible object store for issue attachments.
-  # Both the S3 API (:9000) and the console (:9001) stay inside the compose
-  # network: the api streams attachment bytes through itself, so no port is
-  # published. Administer through mc from inside the network or an SSH tunnel.
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID in .env}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY in .env}
-    volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # One-shot: waits for MinIO, creates the attachments bucket, then exits.
-  minio-init:
-    image: minio/mc:latest
-    restart: 'no'
-    depends_on:
-      - minio
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
-      S3_BUCKET: ${S3_BUCKET:-planner-attachments}
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do echo 'waiting for minio...'; sleep 2; done;
-      mc mb --ignore-existing local/\"$$S3_BUCKET\";
-      echo 'bucket ready: '\"$$S3_BUCKET\";
-      "
-
   # Applies database migrations on startup, then serves the API.
   api:
     image: ghcr.io/croffasia/itsaplan-api:${VERSION:-latest}
@@ -82,8 +45,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
+    volumes:
+      - storage-data:/app/storage
     environment:
       NODE_ENV: production
       API_PORT: 3000
@@ -101,10 +64,13 @@ services:
       # Set COOKIE_DOMAIN only to override the parent domain derived from
       # APP_URL (multi-label TLDs, deep subdomains).
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
-      S3_ENDPOINT: http://minio:9000
+      # Storage driver: "fs" (default, local storage volume) or "s3"
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-fs}
+      STORAGE_PATH: ${STORAGE_PATH:-/app/storage}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
       S3_BUCKET: ${S3_BUCKET:-planner-attachments}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-}
     # start_period covers the migrations the container applies before it listens.
@@ -196,4 +162,4 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
+  storage-data:

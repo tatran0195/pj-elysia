@@ -9,12 +9,12 @@ cp .env.example .env
 # Set the public origins: API_URL, APP_URL
 # Generate each secret with `openssl rand -base64 32`:
 #   POSTGRES_PASSWORD, BETTER_AUTH_SECRET, APP_ENCRYPTION_KEY,
-#   WORKER_INTERNAL_TOKEN, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY
+#   WORKER_INTERNAL_TOKEN
 
 docker compose up -d
 ```
 
-One command brings up the whole stack: Postgres, MinIO, api, worker, bot, and web. The four
+One command brings up the whole stack: Postgres, api, worker, bot, and web. The four
 services run from the images published on each release; `VERSION` in `.env` pins one instead
 of the newest. The API applies migrations on startup, and the first account registered
 becomes the instance admin.

@@ -104,7 +104,7 @@ directly** — it talks to the API over HTTP (better-auth client + fetch).
 bun install
 cp .env.example .env && cp apps/web/.env.example apps/web/.env
 # set BETTER_AUTH_SECRET in .env:  openssl rand -base64 32
-docker compose -f docker-compose.dev.yml up -d   # dev Postgres + MinIO
+docker compose -f docker-compose.dev.yml up -d   # dev Postgres
 bun run db:migrate                               # apply migrations
 bun run dev                                       # api :3000 + web :3001
 ```
@@ -127,7 +127,7 @@ bun run dev                                       # api :3000 + web :3001
 
 | File                         | Purpose                                                                                                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.dev.yml`     | local backing services only: Postgres + MinIO. The apps run on the host.                                                                          |
+| `docker-compose.dev.yml`     | local backing services only: Postgres. The apps run on the host.                                                                                  |
 | `docker-compose.yml`         | self-hosting stack. Runs the published images (`docker compose pull && up -d`) or builds them from source (`up -d --build`); reads a plain `.env`, requires the secrets via `${VAR:?}`. |
 | `docker-compose.coolify.yml` | the same stack for Coolify: reads its generated `SERVICE_*` variables and builds from source. No `image:` here — with both fields Coolify still builds, and stops creating rollback images. |
 | `docker-compose.coolify-images.yml` | the same stack as a Coolify service (New Resource → Docker Compose Empty): the published images, no `build:`, no `ports:`, and the two domains declared with `SERVICE_URL_API_3000` / `SERVICE_URL_WEB_3001`. |
@@ -150,10 +150,7 @@ docker compose -f docker-compose.test.yml build
 docker compose -f docker-compose.test.yml run --rm api-test
 ```
 
-`run` starts api-test's dependencies (Postgres healthy, the MinIO bucket init
-completed), runs the suite, and exits with its code. It does not use
-`--abort-on-container-exit`, which tears the stack down the moment the one-shot
-`minio-test-init` exits, before api-test starts.
+`run` starts api-test's dependencies (Postgres healthy), runs the suite, and exits with its code.
 
 The test database is created by the `postgres-test` service (`POSTGRES_DB=vela_test`,
 tmpfs — nothing persists). The `test` job in `.github/workflows/ci.yml` runs these

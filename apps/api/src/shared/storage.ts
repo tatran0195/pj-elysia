@@ -1,29 +1,49 @@
-import { Disk, S3Driver, type StorageStream } from '@repo/storage';
+import { resolve } from 'node:path';
+import { Disk, FSDriver, S3Driver, type StorageStream } from '@repo/storage';
 
 let cachedDisk: Disk | null = null;
 
+export function resetStorageForTest(): void {
+  cachedDisk = null;
+}
+
 export function getStorage(): Disk {
   if (cachedDisk) return cachedDisk;
-  const endpoint = process.env.S3_ENDPOINT;
-  const bucket = process.env.S3_BUCKET;
-  const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
-    throw new Error(
-      'S3 storage is not configured: set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY.',
-    );
+
+  const driverName = (process.env.STORAGE_DRIVER || 'fs').toLowerCase();
+
+  if (driverName === 'fs') {
+    const rawPath = process.env.STORAGE_PATH || './storage';
+    const location = resolve(process.cwd(), rawPath);
+    const driver = new FSDriver({ location });
+    cachedDisk = new Disk(driver);
+    return cachedDisk;
   }
 
-  const driver = new S3Driver({
-    endpoint,
-    bucket,
-    region: process.env.S3_REGION || 'us-east-1',
-    credentials: { accessKeyId, secretAccessKey },
-    forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
-  });
+  if (driverName === 's3') {
+    const endpoint = process.env.S3_ENDPOINT;
+    const bucket = process.env.S3_BUCKET;
+    const accessKeyId = process.env.S3_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+    if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
+      throw new Error(
+        'S3 storage is not configured: set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY.',
+      );
+    }
 
-  cachedDisk = new Disk(driver);
-  return cachedDisk;
+    const driver = new S3Driver({
+      endpoint,
+      bucket,
+      region: process.env.S3_REGION || 'us-east-1',
+      credentials: { accessKeyId, secretAccessKey },
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
+    });
+
+    cachedDisk = new Disk(driver);
+    return cachedDisk;
+  }
+
+  throw new Error(`Unsupported STORAGE_DRIVER "${driverName}". Supported drivers: "fs", "s3".`);
 }
 
 export const storage = new Proxy({} as Disk, {

@@ -167,9 +167,8 @@ bun run db:migrate:test               # migrate it (repo root)
 bun run test                          # from apps/api, or at root via turbo
 ```
 
-The `test` script loads `--env-file=../../.env.test`. The attachments test also needs
-MinIO + `S3_*` in `.env.test` (`docker compose -f docker-compose.dev.yml up -d` creates
-the bucket); the Docker test gate starts its own throwaway MinIO.
+The `test` script loads `--env-file=../../.env.test`. Storage tests run
+against the local filesystem by default (`STORAGE_DRIVER=fs`).
 
 **Layout.** Tests colocated under `__tests__/`, `integration/` (Treaty vs running app +
 test DB, one file per feature) or `unit/` (pure functions, no session/HTTP/DB — import

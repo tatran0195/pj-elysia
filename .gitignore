@@ -47,3 +47,7 @@ coverage
 
 # agent scratch space (test docs, drafts)
 .workspace/
+
+# local storage
+storage/
+.storage-test/

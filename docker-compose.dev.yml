@@ -1,10 +1,11 @@
 # ─────────────────────────────────────────────────────────────
-# Local development: brings up the backing services the app needs — Postgres and
-# MinIO — with host-published ports, so one command starts them together instead
-# of running each by hand. The api, web, worker, and Telegram bot apps run on the
-# host via `bun run dev` (watch/hot-reload, turbo) and reach these over localhost.
+# Local development: brings up the backing service the app needs — Postgres —
+# with host-published port, so one command starts it instead of running it by hand.
+# The api, web, worker, and Telegram bot apps run on the host via `bun run dev`
+# (watch/hot-reload, turbo) and reach Postgres over localhost.
+# Attachments and media are stored on the local filesystem (./storage) by default.
 #
-#   docker compose -f docker-compose.dev.yml up -d      # starts postgres + minio (+ bucket init)
+#   docker compose -f docker-compose.dev.yml up -d      # starts postgres
 #
 # If host port 5432 is taken (a local Postgres is already running),
 # pick another:  POSTGRES_PORT=5433 docker compose -f docker-compose.dev.yml up -d
@@ -33,40 +34,5 @@ services:
       timeout: 5s
       retries: 10
 
-  # S3-compatible object store for issue attachments (MinIO).
-  # The attachments bucket is created by the minio-init service below.
-  #   S3 API:      http://localhost:9000
-  #   Web console: http://localhost:9001
-  #     login with S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY from .env
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    volumes:
-      - minio-dev-data:/data
-
-  # One-shot: waits for MinIO, creates the attachments bucket, then exits.
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
-      S3_BUCKET: ${S3_BUCKET:-planner-attachments}
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do echo 'waiting for minio...'; sleep 2; done;
-      mc mb --ignore-existing local/\"$$S3_BUCKET\";
-      echo 'bucket ready: '\"$$S3_BUCKET\";
-      "
-
 volumes:
   postgres-dev-data:
-  minio-dev-data:

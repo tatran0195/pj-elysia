@@ -4,10 +4,9 @@ import { signUpTestUser } from '#tests/helpers/auth';
 import { resetDb } from '#tests/helpers/db';
 
 // Attachments feature: metadata in Postgres, bytes in the object store (shared/
-// s3.ts against a real MinIO — see the Tests setup for S3_* env). This is the
-// only test that exercises s3.ts (putObject/getObject/deleteObject) and the one
-// public, unauthenticated route (GET /attachments/:publicId/raw), which is the
-// auth-context session-gate exception.
+// storage.ts against the configured storage driver, fs by default). This exercises
+// storage (put/get/delete) and the one public, unauthenticated route
+// (GET /attachments/:publicId/raw), which is the auth-context session-gate exception.
 
 // Owner with a project and one issue to attach files to. createProject seeds the
 // default columns; an issue needs a columnId and a title.
